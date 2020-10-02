@@ -81,6 +81,8 @@ add_custom_target(flang1_gen_sphinx_docs
           ${FLANG1_DOC_BIN_DIR}/transform.rst
   )
 
+add_dependencies(flang1_gen_sphinx_docs gen_frontend_parsetable)
+
 # Local Variables:
 # mode: cmake
 # End:
