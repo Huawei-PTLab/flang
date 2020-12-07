@@ -398,7 +398,7 @@ p_pragma(char *pg, int pline)
 #define SW_PRECOND 55
 #define SW_TRIPCOUNT 56
 #define SW_MSCHED 57
-#define SW_NOINLINE 58
+#define SW_INLINE 58
 #define SW_LPTEST1 59
 #define SW_LPTEST2 60
 #define SW_ALIGN 61
@@ -453,6 +453,7 @@ static struct c table[] = {
     {"index_reuse", SW_INDEX_REUSE, false, S_LOOP, S_LOOP},
 #endif
     {"info", SW_INFO, true, S_ROUTINE, S_LOOP | S_ROUTINE | S_GLOBAL},
+    {"inline", SW_INLINE, true, S_ROUTINE, S_ROUTINE | S_GLOBAL},
     {"invarif", SW_INVARIF, true, S_LOOP, S_LOOP | S_ROUTINE | S_GLOBAL},
     {"ivdep", SW_IVDEP, false, S_LOOP, S_LOOP | S_ROUTINE | S_GLOBAL},
     {"l3f", SW_L3F, true, S_NONE, S_NONE},
@@ -462,7 +463,6 @@ static struct c table[] = {
 #endif
     {"loopcount", SW_LOOPCOUNT, false, S_LOOP, S_LOOP | S_ROUTINE | S_GLOBAL},
     {"lstval", SW_LSTVAL, true, S_LOOP, S_LOOP | S_ROUTINE | S_GLOBAL},
-    {"noinline", SW_NOINLINE, false, S_ROUTINE, S_ROUTINE | S_GLOBAL},
     {"opt", SW_OPT, false, S_ROUTINE, S_ROUTINE | S_GLOBAL},
 #ifdef FE90
     {"parallel_and_serial", SW_PARANDSER, false, S_ROUTINE, S_ROUTINE},
@@ -1288,14 +1288,19 @@ do_sw(void)
     else
       bclr(DIR_OFFSET(currdir, x[19]), 0x400);
     break;
-  case SW_NOINLINE:
+  case SW_INLINE:
     /*
-     * #pragma [scope] noinline
+     * !dir$ [no]inline
      *
-     * mark routine or all routines as not-to-be-extracted, and therefore
-     * not to be inlined
+     * Mark procedure either as should-be-inlined, or as must-not-be-inlined.
      */
-    bset(DIR_OFFSET(currdir, x[14]), 8);
+    if (no_specified) {
+      bset(DIR_OFFSET(currdir, x[14]), 0x8);
+      bclr(DIR_OFFSET(currdir, x[14]), 0x200000);
+    } else {
+      bset(DIR_OFFSET(currdir, x[14]), 0x200000);
+      bclr(DIR_OFFSET(currdir, x[14]), 0x8);
+    }
     break;
   case SW_ZEROTRIP:
     if (no_specified)

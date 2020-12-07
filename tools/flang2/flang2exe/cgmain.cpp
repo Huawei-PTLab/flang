@@ -60,6 +60,12 @@ typedef enum SincosOptimizationFlags {
   SINCOS_MASK = SINCOS_SIN | SINCOS_COS
 } SincosOptimizationFlags;
 
+/* used for inline index */
+enum inline_attr_type {
+  ALWAYS_INLINE = 1,
+  NO_INLINE = 2
+};
+
 /* clang-format off */
 
 const int max_operands[I_LAST + 1] = {
@@ -1629,6 +1635,10 @@ restartConcur:
       BIH_UNROLL(bih) = true;
     else if (XBIT(11, 0x400))
       BIH_NOUNROLL(bih) = true;
+    if (XBIT(14, 0x200000))
+      llvm_info.abi_info->inline_attr = ALWAYS_INLINE;
+    else if (XBIT(14, 0x8))
+      llvm_info.abi_info->inline_attr = NO_INLINE;
     close_pragma();
 
     for (ilt = BIH_ILTFIRST(bih); ilt; ilt = ILT_NEXT(ilt)) {
@@ -13172,6 +13182,10 @@ print_function_signature(int func_sptr, const char *fn_name, LL_ABI_Info *abi,
 
   print_token(")");
 
+  if (abi->inline_attr == ALWAYS_INLINE)
+    print_token(" alwaysinline");
+  else if (abi->inline_attr == NO_INLINE)
+    print_token(" noinline");
   /* Function attributes.  With debugging turned on, the debug attributes
      contain "noinline", so there is no need to repeat it here. */
   if (need_debug_info(SPTR_NULL)) {

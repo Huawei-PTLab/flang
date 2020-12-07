@@ -789,6 +789,9 @@ typedef struct LL_ABI_Info_ {
   /** This is a fast_math function */
   unsigned fast_math : 1;
 
+  /** This is an inline/noinline function, 1 for inline, 2 for no inline **/
+  unsigned inline_attr : 2;
+
   /** Calling convention to use. See enum LL_CallConv. */
   unsigned call_conv;
 

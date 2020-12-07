@@ -658,7 +658,7 @@ with '&var'.
 Don't reuse inliner temps across inlinings; this allows more precise IPA
 pointer target analysis (C)
 .XB 0x08:
-Don't extract this function (set by pragma noinline)
+Do not inline this function (marked by the NOINLINE directive).
 .XB 0x10:
 Run the extractor in the compiler itself; this is used for one-pass IPA
 and IPA-driven inlining.
@@ -704,7 +704,7 @@ In the inliner, implement 'small function' heuristic
 .XB 0x100000:
 Apply compression to the inline file when extracting 'inline' keyword functions.
 .XB 0x200000:
-Extract and inline functions with the 'inline' keyword.
+Inline this function (marked with the INLINE directive).
 .XB 0x400000:
 Used with -x 14 0x200000, extract and inline all functions
 .XB 0x800000:
