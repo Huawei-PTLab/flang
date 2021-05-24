@@ -3271,7 +3271,7 @@ addarth(ILI *ilip)
     tmp = red_iadd(op1, res.numi[1]);
     if (tmp)
       return tmp;
-    if (opc == IL_IADD && (res.numi[1] < 0 && res.numi[1] != 0x80000000))
+    if (opc == IL_IADD && (res.numi[1] < 0 && res.numi[1] != (INT)0x80000000))
       return ad2ili(IL_ISUB, op1, ad_icon(-res.numi[1]));
     break;
   case IL_KADD:
@@ -3301,7 +3301,7 @@ addarth(ILI *ilip)
     if (tmp)
       return tmp;
     if (opc == IL_KADD && res.numi[0] < 0 &&
-        !(res.numi[0] == 0x80000000 && res.numi[1] == 0)) {
+        !(res.numi[0] == (INT)0x80000000 && res.numi[1] == 0)) {
       neg64(res.numi, res.numi);
       op2 = ad1ili(IL_KCON, getcon(res.numi, DT_INT8));
       return ad2ili(IL_KSUB, op1, op2);
@@ -3469,7 +3469,7 @@ addarth(ILI *ilip)
     }
     if ((res.numi[1] = con2v2) == 0)
       return op1;
-    if (res.numi[1] == 0x80000000)
+    if (res.numi[1] == (INT)0x80000000)
       break;
     tmp = red_iadd(op1, -res.numi[1]);
     if (tmp)
@@ -3503,7 +3503,7 @@ addarth(ILI *ilip)
     if (cons2 == stb.k0)
       return op1;
     GETVALI64(res, cons2);
-    if (res.numi[0] == 0x80000000 && res.numi[1] == 0) {
+    if (res.numi[0] == (INT)0x80000000 && res.numi[1] == 0) {
       break;
     }
     neg64(res.numi, num2.numi);
@@ -3727,7 +3727,7 @@ addarth(ILI *ilip)
         ilix = ad2ili(opc, (int)ILI_OPND(op1, 1), op2);
         return ilix;
       }
-      if (opc == IL_KMUL && con2v1 == -1 && con2v2 == 0xffffffff)
+      if (opc == IL_KMUL && con2v1 == -1 && con2v2 == (int)0xffffffff)
         return ad1ili(IL_KNEG, op1);
     } else if (ncons == 3) {
       GETVALI64(num1, cons1);
@@ -3891,7 +3891,7 @@ addarth(ILI *ilip)
     break;
   case IL_IDIV:
     if (ncons == 3 && con2v2 != 0) {
-      if (con1v2 == 0x80000000 && con2v2 == -1)
+      if (con1v2 == (int)0x80000000 && con2v2 == -1)
         res.numi[1] = 0x80000000;
       else
         res.numi[1] = con1v2 / con2v2;
@@ -4056,7 +4056,7 @@ addarth(ILI *ilip)
         return op1;
       if (ILI_OPC(op1) == IL_KMUL && ILI_OPND(op1, 2) == op2)
         return ILI_OPND(op1, 1);
-      if (con2v1 == -1 && con2v2 == 0xffffffff)
+      if (con2v1 == -1 && con2v2 == (int)0xffffffff)
         return ad1ili(IL_KNEG, op1);
       if (con2v1 >= 0) {
         /*
@@ -4382,7 +4382,7 @@ addarth(ILI *ilip)
 #endif
   case IL_MOD:
     if (ncons == 3 && con2v2 != 0) {
-      if (con1v2 == 0x80000000 && con2v2 == -1)
+      if (con1v2 == (int)0x80000000 && con2v2 == -1)
         res.numi[1] = 0;
       else
         res.numi[1] = con1v2 % con2v2;
@@ -7311,7 +7311,7 @@ red_iadd(int ilix, INT con)
         val = CONVAL2G(ILI_OPND(New, 1));
         if (val == 0)
           return lop;
-        if ((opc == IL_IADD) && (val < 0 && val != 0x80000000)) {
+        if ((opc == IL_IADD) && (val < 0 && val != (INT)0x80000000)) {
           newili.opc = IL_ISUB;
           newili.opnd[1] = ad_icon(-val);
         }
@@ -7369,7 +7369,7 @@ red_iadd(int ilix, INT con)
         val = CONVAL2G(ILI_OPND(New, 1));
         if (val == 0)
           return lop;
-        if ((opc == IL_ISUB) && (val < 0 && val != 0x80000000)) {
+        if ((opc == IL_ISUB) && (val < 0 && val != (INT)0x80000000)) {
           newili.opc = IL_IADD;
           newili.opnd[1] = ad_icon(-val);
         }
@@ -7421,7 +7421,7 @@ red_kadd(int ilix, INT con[2])
         if (val[0] == 0 && val[1] == 0)
           return lop;
         if (opc == IL_KADD && val[0] < 0 &&
-            !(val[0] == 0x80000000 && val[1] == 0)) {
+            !(val[0] == (INT)0x80000000 && val[1] == 0)) {
           newili.opc = IL_KSUB;
           neg64(val, val);
           newili.opnd[1] = ad1ili(IL_KCON, getcon(val, DT_INT8));
@@ -7471,7 +7471,7 @@ red_kadd(int ilix, INT con[2])
         if (val[0] == 0 && val[1] == 0)
           return lop;
         if (opc == IL_KSUB && val[0] < 0 &&
-            !(val[0] == 0x80000000 && val[1] == 0)) {
+            !(val[0] == (INT)0x80000000 && val[1] == 0)) {
           newili.opc = IL_KADD;
           neg64(val, val);
           newili.opnd[1] = ad1ili(IL_KCON, getcon(val, DT_INT8));
@@ -13272,7 +13272,7 @@ ili_subscript(int sub)
     if (CONVAL2G(cst) >= 0) {
       if (CONVAL1G(cst) == 0)
         sub = ad_icon(CONVAL2G(cst));
-    } else if (CONVAL1G(cst) == 0xffffffffu)
+    } else if (CONVAL1G(cst) == (INT)0xffffffff)
       sub = ad_icon(CONVAL2G(cst));
   }
   return sub;
