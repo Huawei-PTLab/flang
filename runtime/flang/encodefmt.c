@@ -704,7 +704,6 @@ int *len;
 }
 
 /* ---------------------------------------------------------------- */
-
 #ifdef FLANG_ENCODEFMT_UNUSED
 static int ef_nextdtchar(p, len)
     /* call after encounter DT */
@@ -755,7 +754,7 @@ ef_putvlist(char *p, int *len)
  * ENTF90IO(DTS_FMTR,dts_fmtr)/ENTF90IO(DTS_FMTW,dts_fmtw)
  * will handle it if it were i4 */
 {
-  char *begin = p, c;
+  char *begin = p;
   char *op = p;
   INT i, j, cnt;
 
