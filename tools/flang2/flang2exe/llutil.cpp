@@ -2281,7 +2281,7 @@ write_operand(OPERAND *p, const char *punc_string, int flags)
       } else {
         char buffer[6];
         print_token("[");
-        for (int i = 0; i < p->ll_type->sub_elements; i++) {
+        for (BIGUINT64 i = 0; i < p->ll_type->sub_elements; i++) {
           if (i)
             print_token(", ");
           print_token("i8 ");
@@ -2796,8 +2796,6 @@ write_alt_struct_def(LLDEF *def)
 static OPERAND *
 write_def_values(OPERAND *def_op, LL_Type *type)
 {
-  int i;
-
   if (def_op == NULL) {
     print_token(type->str);
     print_token(" undef");
@@ -2850,7 +2848,7 @@ write_def_values(OPERAND *def_op, LL_Type *type)
       } else {
         OPERAND *new_def_op = def_op;
         print_token(" [ ");
-        for (i = 0; i < type->sub_elements; i++) {
+        for (BIGUINT64 i = 0; i < type->sub_elements; i++) {
           if (i)
             print_token(", ");
           /* The idea here is that we reuse the same def_op for each array member.
@@ -2863,7 +2861,7 @@ write_def_values(OPERAND *def_op, LL_Type *type)
       }
     } else {
       print_token(" [ ");
-      for (i = 0; i < type->sub_elements; i++) {
+      for (BIGUINT64 i = 0; i < type->sub_elements; i++) {
         if (i)
           print_token(", ");
         def_op = write_def_values(def_op, type->sub_types[0]);
@@ -2876,7 +2874,7 @@ write_def_values(OPERAND *def_op, LL_Type *type)
   case LL_VECTOR:
     print_token(type->str);
     print_token(" < ");
-    for (i = 0; i < type->sub_elements; i++) {
+    for (BIGUINT64 i = 0; i < type->sub_elements; i++) {
       if (i)
         print_token(", ");
       assert(def_op, "write_def_values(): missing def for type", 0, ERR_Fatal);
@@ -2891,7 +2889,7 @@ write_def_values(OPERAND *def_op, LL_Type *type)
       print_token(" <{ ");
     else
       print_token(" { ");
-    for (i = 0; i < type->sub_elements; i++) {
+    for (BIGUINT64 i = 0; i < type->sub_elements; i++) {
       if (i)
         print_token(", ");
       def_op = write_def_values(def_op, type->sub_types[i]);
