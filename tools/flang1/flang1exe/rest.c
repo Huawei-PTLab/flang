@@ -33,10 +33,8 @@
 static int _transform_func(int, int);
 static LOGICAL stride_1_dummy(int, int, int);
 static LOGICAL stride_1_section(int, int, int, int);
-static LOGICAL dev_section_ignore_c(int, int, int, int, int);
 #ifdef FLANG_REST_UNUSED
 static LOGICAL is_expr_has_function(int);
-static void transform_extrinsic(int, int);
 #endif
 void remove_alias(int, int);
 static int first_element_from_section(int);
@@ -68,16 +66,11 @@ insert_comm_before(int std, int ast, LOGICAL *rhs_is_dist, LOGICAL is_subscript)
   int l, r, d, o;
   int l1, l2, l3, l4;
   int a;
-  int astnew;
-  int list;
   int i, nargs, argt, ag;
   int asd;
   int ndim;
-  int sptr;
   int subs[MAXDIMS];
   int dest, nextd, newd;
-  int lhs_sptr;
-  int align;
 
   if (!ast)
     return ast;
@@ -364,12 +357,9 @@ _transform_func(int std, int ast)
   int l, r, d, o;
   int l1, l2, l3;
   int a;
-  int astnew;
-  int list;
   int i, nargs, argt, ag;
   int asd;
   int ndim;
-  int sptr;
   int subs[MAXDIMS];
 
   a = ast;
@@ -459,8 +449,6 @@ static void
 insert_comm(int std, int ast, LOGICAL lhs_is_dist)
 {
   LOGICAL rhs_is_dist;
-  int argt;
-  int astnew;
 
   /* This is for a scalar statement, so we just need to retrieve the
    * values into temp scalars.
@@ -474,7 +462,6 @@ insert_comm(int std, int ast, LOGICAL lhs_is_dist)
 void
 transform_ast(int std, int ast)
 {
-  int arr, sub;
   LOGICAL lhs_is_dist = FALSE;
 
   /* transform a single ast; involves inserting guards,
@@ -495,14 +482,13 @@ transform_ast(int std, int ast)
 
 #ifdef FLANG_REST_UNUSED
 /* This routine is to search function from expression. */
-
 static LOGICAL
 is_expr_has_function(int expr)
 {
   int i, nargs, argt;
   int asd;
   int ndim;
-  LOGICAL find1, find2;
+  LOGICAL find1;
 
   if (expr == 0)
     return FALSE;
@@ -708,7 +694,7 @@ pghpf_type(int ss)
 static int
 copy_to_scalar(int ast, int std, int sym)
 {
-  int nsym, nsymast, asn, nstd;
+  int nsym, nsymast, asn;
   int sptr;
 
   if (ast == 0)
@@ -993,7 +979,6 @@ copy_desc_to_bnds_vars(int sptrdest, int desc, int memdesc, int std)
   int ndim;
   int i;
   int mult;
-  int zbase;
   int dest_sdsc;
 
   dt = DTYPEG(sptrdest);
@@ -1040,7 +1025,7 @@ static void
 get_invoking_proc_desc(int sptr, int ast, int std)
 {
   int tmp, dtype, sdsc, newargt;
-  int func, astnew, sc;
+  int func, astnew;
 
   if (!is_procedure_ptr(sptr))
     return;
@@ -1125,9 +1110,7 @@ transform_call(int std, int ast)
   int argt, nargs;
   int i, newj, newi;
   int sptr;
-  int sec;
   int newargt, newnargs;
-  int element;
   int ty;
   int entry;
   int dscptr;
@@ -1136,8 +1119,6 @@ transform_call(int std, int ast)
   int retval, descr;
   int is_hcc;
   int is_ent;
-  int calling_cuda_global = 0;
-  int in_cuda_host = 0;
   int istart;
   int f_descr;
   int tbp_inv; /* passed object argument number. 0 if N/A */
@@ -1799,7 +1780,6 @@ transform_call(int std, int ast)
             ++newj;
             break;
           }
-        chk_surr:
           sptrsdsc = SDSCG(sptr);
           need_surr = 0;
           if (ALLOCATTRG(inface_arg)) {
@@ -2382,7 +2362,7 @@ static LOGICAL
 is_seq_dummy(int entry, int arr, int loc)
 {
   int dscptr, iface;
-  int sptr, dummy_sptr;
+  int dummy_sptr;
 
   proc_arginfo(entry, NULL, &dscptr, &iface);
   if (iface && HCCSYMG(iface)) {
@@ -2454,8 +2434,7 @@ stride_1_dummy(int entry, int arr, int pos)
 static LOGICAL
 is_optional_char_dummy(int entry, int arr, int pos)
 {
-  int dscptr;
-  int sptr, dummy_sptr;
+  int dummy_sptr;
 
   if (arr != astb.ptr0)
     return FALSE;
@@ -2542,11 +2521,8 @@ handle_seq_section(int entry, int arr, int loc, int std, int *retval,
   int topsptr;
   int topdtype;
   LOGICAL simplewholearray;
-  int tmp;
   LOGICAL is_seq_pointer, is_pointer;
   LOGICAL continuous, desc_needed;
-  int tmp_ast;
-  int tmpptr;
   int is_hcc;
   int iface; /* sptr of explicit interface; could be zero */
 
@@ -3455,7 +3431,7 @@ first_element_from_section(int arr)
   int i;
   int glb;
   int asd;
-  int triple, lop, parent, member;
+  int triple, lop, parent;
   int sptr;
   int ndim, numdim;
   int newarr;
@@ -3503,9 +3479,6 @@ first_element_from_section(int arr)
     return 0;
   }
 }
-
-static int real_copy_local_scalar(int arg, int std, LOGICAL copyout,
-                                  LOGICAL copyall);
 
 /* assign 'ast' to a temp integer before 'std' */
 static int
@@ -3704,16 +3677,8 @@ remove_alias(int std, int ast)
 {
   int argt;
   int nargs;
-  int i, j, k;
+  int i;
   int ele;
-  int sub;
-  int ndim, asd;
-  int dtype1;
-  int sptr;
-  int arg;
-  int temp_sclr;
-  int asn_ast;
-  int newstd;
 
   if (pure_gbl.local_mode)
     return;
@@ -3743,7 +3708,7 @@ is_desc_needed(int entry, int arr_ast, int loc)
 {
   int iface; /* sptr of explicit interface; could be zero */
   int dscptr;
-  int sptr, sptr1;
+  int sptr1;
 
   proc_arginfo(entry, NULL, &dscptr, &iface);
 
@@ -3799,9 +3764,6 @@ continuous_section(int entry, int arr_ast, int loc, int onlyfirst)
   int ndims, dim;
   int astsub;
   int sptr;
-  ADSC *ad;
-  int aln;
-  int iface;
 
   if (!A_SHAPEG(arr_ast))
     return TRUE;
@@ -3888,32 +3850,6 @@ stride_1_section(int entry, int arr_ast, int pos, int std)
   return TRUE;
 } /* stride_1_section */
 
-/*   Given:
- *   + a dummy is assumed-shape device array with ignore_c
- *   + a section of a device/shared/constant array
- *   Determine if the section argument is not contiguous (a triple
- *   exists in a dimension other than the first) or the first dimension
- *   is not stride 1.
- */
-static LOGICAL
-dev_section_ignore_c(int arr_ast, int std, int sptr, int entry, int argnbr)
-{
-  return FALSE;
-} /* dev_section_ignore_c */
-
-static void
-unignore_sym(int sptr)
-{
-  if (IGNOREG(sptr) && SCG(sptr) == SC_CMBLK) {
-    int cmn, s;
-    cmn = CMBLKG(sptr);
-    IGNOREP(cmn, 0);
-    for (s = CMEMFG(cmn); s > NOSYM; s = SYMLKG(s)) {
-      IGNOREP(s, 0);
-    }
-  }
-} /* unignore_sym */
-
 void
 call_analyze(void)
 {
@@ -3993,16 +3929,11 @@ transform_all_call(int std, int ast)
   int l1, l2, l3, l4;
   int a;
   int astnew, stdnew;
-  int list;
   int i, nargs, argt, ag;
   int asd;
   int ndim;
-  int sptr;
   int subs[MAXDIMS];
   int dest;
-  int lhs_sptr;
-  int align;
-  int astli, astlinew;
 
   if (!ast)
     return ast;
@@ -4030,7 +3961,7 @@ transform_all_call(int std, int ast)
       STD_PREV(std) = STD_PREV(stdnew);
       STD_NEXT(STD_PREV(stdnew)) = std;
       STD_PREV(stdnew) = STD_NEXT(stdnew) = 0;
-      if (astb.std.stg_avail == stdnew + 1) {
+      if ((int)astb.std.stg_avail == stdnew + 1) {
         /* no statements added, make this one available again */
         STG_RETURN(astb.std);
       }

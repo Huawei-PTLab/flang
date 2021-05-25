@@ -119,7 +119,7 @@ void
 lower_set_symbols(void)
 {
   int sptr;
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     /* allocatable arrays and members that are not POINTER
      * arrays can be 'noconflict'; arrays without TARGET can be
      * 'noconflict'; temp arrays are 'noconflict' */
@@ -168,7 +168,7 @@ void
 lower_set_craypointer(void)
 {
   int sptr;
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     switch (STYPEG(sptr)) {
     case ST_ARRAY:
     case ST_VAR:
@@ -204,7 +204,7 @@ void
 lower_unset_symbols(void)
 {
   int sptr;
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     switch (STYPEG(sptr)) {
     case ST_ARRAY:
     case ST_VAR:
@@ -230,7 +230,7 @@ lower_make_all_descriptors(void)
 {
   int sptr;
   int stp = 0;
-  for (sptr = stb.firstusym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstusym; sptr < (int)stb.stg_avail; ++sptr) {
     switch (STYPEG(sptr)) {
     case ST_ARRAY:
     case ST_DESCRIPTOR:
@@ -474,7 +474,7 @@ static void
 fill_fixed_array_dtype(int dtype)
 {
   int i, ndim, m;
-  ISZ_T mlpyr, zbase, numelm;
+  ISZ_T mlpyr, zbase;
   ndim = ADD_NUMDIM(dtype);
   mlpyr = 1;
   zbase = 0;
@@ -563,8 +563,7 @@ fill_fixed_array_dtype(int dtype)
 static void
 fill_pointer_array_dtype(int dtype, int sptr)
 {
-  int i, ndim, zbase, zbaseast, numelm, numelmast, desc;
-  int desc_ast;
+  int i, ndim, zbaseast, numelmast, desc;
 
   desc = SDSCG(sptr);
   if (desc == 0) {
@@ -573,7 +572,7 @@ fill_pointer_array_dtype(int dtype, int sptr)
   }
   ndim = ADD_NUMDIM(dtype);
   for (i = 0; i < ndim; ++i) {
-    int m, lw, up, lwast, upast, extntast, mast;
+    int lwast, upast, extntast, mast;
     lwast = ADD_LWAST(dtype, i);
     if (!lwast || A_TYPEG(lwast) != A_CNST) {
       ADD_LWAST(dtype, i) = get_global_lower(desc, i);
@@ -655,11 +654,11 @@ fill_adjustable_array_dtype(int dtype, int assumedshape, int stride1,
                             int tempsc, int alltemp, int keeptemp, int saveg,
                             int sptr)
 {
-  int i, ndim, zbase, numelm, zbasesym, numelmsym, nonconstant;
+  int i, ndim, zbase, zbasesym, nonconstant;
   int mlpyr, mlpyrsym;
   ISZ_T mlpyrval;
   int dt_bnd;
-  int enclfunc, midnum, taskp;
+  int enclfunc, taskp;
 
   enclfunc = 0;
   taskp = 0;
@@ -710,7 +709,7 @@ fill_adjustable_array_dtype(int dtype, int assumedshape, int stride1,
     lower_visit_symbol(mlpyrsym);
   }
   for (i = 0; i < ndim; ++i) {
-    int m, lw, lwsym, up, upsym, extnt;
+    int lw, lwsym, up, upsym, extnt;
     ISZ_T lwval, upval;
     lw = ADD_LWAST(dtype, i);
     if (lw != 0 && A_ALIASG(lw))
@@ -821,8 +820,7 @@ static void
 lower_prepare_symbols()
 {
   int sptr, link, fval;
-  int stdx;
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     int dtype, stype;
     stype = STYPEG(sptr);
     dtype = DTYPEG(sptr);
@@ -926,7 +924,7 @@ lower_prepare_symbols()
          * We don't want to put them on the gbl.locals list more than
          * once, and do want to make them static if any of the symbols
          * using them are static */
-        int ptr, off, desc, ndtype;
+        int ptr, off, desc;
         ptr = MIDNUMG(sptr);
         if (ptr == 0)
           break;
@@ -1099,9 +1097,8 @@ lower_prepare_symbols()
 static void
 lower_finish_symbols(void)
 {
-  int sptr, link;
-  for (sptr = stb.firstusym; sptr < stb.stg_avail; ++sptr) {
-    int dtype;
+  int sptr;
+  for (sptr = stb.firstusym; sptr < (int)stb.stg_avail; ++sptr) {
     if (IGNOREG(sptr))
       continue;
     switch (STYPEG(sptr)) {
@@ -1239,7 +1236,7 @@ lower_init_sym(void)
   lower_make_all_descriptors();
   /* reassign member addresses to account for distributed derived
    * type members, late additions of section descriptors, pointers, etc. */
-  for (dtype = 0; dtype < stb.dt.stg_avail; dtype += dlen(DTY(dtype))) {
+  for (dtype = 0; dtype < (int)stb.dt.stg_avail; dtype += dlen(DTY(dtype))) {
     if (DTY(dtype) == TY_DERIVED) {
       chkstruct(dtype);
     }
@@ -1452,7 +1449,7 @@ create_static_base(int blockname)
 } /* create_static_base */
 
 static void
-putvline(char *n, ISZ_T v)
+putvline(const char *n, ISZ_T v)
 {
 #if DEBUG
   if (DBGBIT(47, 31) || XBIT(50, 0x10)) {
@@ -1463,7 +1460,7 @@ putvline(char *n, ISZ_T v)
 } /* putvline */
 
 static void
-putbit(char *bitname, int bit)
+putbit(const char *bitname, int bit)
 {
 #if DEBUG
   if (DBGBIT(47, 31) || XBIT(50, 0x10)) {
@@ -1474,7 +1471,7 @@ putbit(char *bitname, int bit)
 } /* putbit */
 
 static void
-putsym(char *valname, int sym)
+putsym(const char *valname, int sym)
 {
   if (valname) {
 #if DEBUG
@@ -1495,7 +1492,7 @@ putsym(char *valname, int sym)
 } /* putsym */
 
 static void
-putval(char *valname, ISZ_T val)
+putval(const char *valname, ISZ_T val)
 {
 #if DEBUG
   if (DBGBIT(47, 31) || XBIT(50, 0x10)) {
@@ -1506,7 +1503,7 @@ putval(char *valname, ISZ_T val)
 } /* putval */
 
 static void
-putival(char *valname, int val)
+putival(const char *valname, int val)
 {
 #if DEBUG
   if (DBGBIT(47, 31) || XBIT(50, 0x10)) {
@@ -1517,7 +1514,7 @@ putival(char *valname, int val)
 } /* putival */
 
 static void
-putlval(char *valname, long val)
+putlval(const char *valname, long val)
 {
 #if DEBUG
   if (DBGBIT(47, 31) || XBIT(50, 0x10)) {
@@ -1546,7 +1543,7 @@ puthex(int hex)
 } /* puthex */
 
 static void
-putstring(char *s)
+putstring(const char *s)
 {
 #if DEBUG
   if (DBGBIT(47, 31) || XBIT(50, 0x10)) {
@@ -1557,7 +1554,7 @@ putstring(char *s)
 } /* putstring */
 
 static void
-putwhich(char *s, char *ss)
+putwhich(const char *s, const char *ss)
 {
 #if DEBUG
   if (DBGBIT(47, 31) || XBIT(50, 0x10)) {
@@ -1573,7 +1570,7 @@ void
 lower_fileinfo(void)
 {
   int fihx;
-  char *dirname, *filename, *funcname, *fullname;
+  const char *dirname, *filename, *funcname, *fullname;
 
   fihx = curr_findex;
 
@@ -1616,7 +1613,6 @@ lower_sym_header(void)
   ISZ_T bss_addr;
   INITEM *p;
   static int first_time = 1;
-  int i;
 
   /* last chance to fix up symbols and datatypes */
   lower_finish_symbols();
@@ -1810,7 +1806,6 @@ lower_common_sizes(void)
 static void
 check_additional_common(int newcom)
 {
-  int oldcom;
   int hash, link;
   int s, lasts;
 
@@ -1898,7 +1893,7 @@ makefvallocal(int rutype, int fval)
 void
 lower_visit_symbol(int sptr)
 {
-  int socptr, dtype, params, i, fval, inmod, stype, parsyms;
+  int socptr, dtype, params, i, fval, inmod, stype;
   if (LOWER_SYMBOL_REPLACE(sptr)) {
     lower_visit_symbol(LOWER_SYMBOL_REPLACE(sptr));
     lerror("visit symbol %s(%d) which was replaced by %s(%d)", SYMNAME(sptr),
@@ -2148,7 +2143,7 @@ void
 lower_check_generics(void)
 {
   int sptr;
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     if (STYPEG(sptr) == ST_USERGENERIC) {
       int desc;
       if (XBIT(57, 0x20) && notimplicit(sptr)) {
@@ -2372,8 +2367,6 @@ eval_con_expr(int ast, int *val, int *dtyp)
   int val1;
   int val2;
   int tmp_ast1;
-  int tmp_ast2;
-  int sptr;
   int success = 0;
 
   if (!ast)
@@ -2465,7 +2458,7 @@ lower_put_datatype(int dtype, int usage)
      */
     ndim = ADD_NUMDIM(dtype);
     for (i = 0; i < ndim; ++i) {
-      int lb, ub, extnt, mpy;
+      int lb, ub, extnt;
       lb = ADD_LWAST(dtype, i);
       ub = ADD_UPAST(dtype, i);
       extnt = ADD_EXTNTAST(dtype, i);
@@ -2855,7 +2848,6 @@ lower_put_datatype(int dtype, int usage)
           goto extnt_again;
         case I_SIZE: {
           int arr, con, dty, val;
-          ADSC *ad;
           extnt = A_ARGSG(extnt);
           arr = ARGT_ARG(extnt, 0);
           con = ARGT_ARG(extnt, 1);
@@ -2986,9 +2978,9 @@ lower_put_datatype_stb(int dtype)
 void
 lower_data_types(void)
 {
-  int dtype, sptr;
+  int dtype;
 
-  for (dtype = 0; dtype < stb.dt.stg_avail; dtype += dlen(DTY(dtype))) {
+  for (dtype = 0; dtype < (int)stb.dt.stg_avail; dtype += dlen(DTY(dtype))) {
     if (dtype >= last_datatype_used || datatype_used[dtype]) {
       lower_put_datatype_stb(dtype);
     }
@@ -3093,7 +3085,7 @@ void
 lower_namelist_plists(void)
 {
   int sptr;
-  for (sptr = stb.firstusym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstusym; sptr < (int)stb.stg_avail; ++sptr) {
     if (STYPEG(sptr) == ST_NML) {
       /* change the data type of the namelist PLIST from DT_INT
        * to an array of proper size */
@@ -3132,7 +3124,7 @@ lower_linearized(void)
   int sptr;
   if (!XBIT(52, 4))
     return;
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     if (DTY(DTYPEG(sptr)) == TY_ARRAY && LNRZDG(sptr)) {
       /* type should be basetype(1:1):: array */
       int olddtype, dtype, savedtype;
@@ -3150,7 +3142,7 @@ lower_linearized(void)
       DTYPEP(sptr, dtype);
     }
   }
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     int dtype;
     dtype = DTYPEG(sptr);
     if (DTY(dtype) == TY_ARRAY && LNRZDG(sptr)) {
@@ -3170,7 +3162,7 @@ lower_linearized(void)
  * note that putsname always inserts a new name into the name table
  */
 static int
-find_nmptr(char *symname, int len)
+find_nmptr(const char *symname, int len)
 {
   int hash, hptr;
   HASH_ID(hash, symname, len);
@@ -3183,7 +3175,7 @@ find_nmptr(char *symname, int len)
 } /* find_nmptr */
 
 static int
-lower_newsymbol(char *name, int stype, int dtype, int sclass)
+lower_newsymbol(const char *name, int stype, int dtype, int sclass)
 {
   int sptr, hashid;
   int namelen = strlen(name);
@@ -3211,9 +3203,9 @@ lower_newsymbol(char *name, int stype, int dtype, int sclass)
 } /* lower_newsymbol */
 
 int
-lower_newfunc(char *name, int stype, int dtype, int sclass)
+lower_newfunc(const char *name, int stype, int dtype, int sclass)
 {
-  int namelen, sptr, hashid;
+  int namelen, sptr;
   namelen = strlen(name);
   sptr = lookupsym(name, namelen);
   if (sptr <= NOSYM)
@@ -3222,9 +3214,8 @@ lower_newfunc(char *name, int stype, int dtype, int sclass)
 } /* lower_newfunc */
 
 int
-lower_makefunc(char *name, int dtype, LOGICAL isDscSafe)
+lower_makefunc(const char *name, int dtype, LOGICAL isDscSafe)
 {
-  char *fullname;
   int symfunc;
   symfunc = lower_newfunc(name, ST_PROC, dtype, SC_EXTERN);
   HCCSYMP(symfunc, 1);
@@ -3237,13 +3228,13 @@ void
 lower_clear_visit_fields(void)
 {
   int sptr;
-  for (sptr = 0; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = 0; sptr < (int)stb.stg_avail; ++sptr) {
     VISITP(sptr, 0);
     VISIT2P(sptr, 0);
   }
 } /* lower_clear_visit_fields */
 
-static int lower_cmptrvar(char *, int, int, int *);
+static int lower_cmptrvar(const char *, int, int, int *);
 #ifdef FLANG_LOWERSYM_UNUSED
 static int get_cmptrvar(char *, int, int, int *);
 #endif
@@ -3263,8 +3254,8 @@ static int get_cmptrvar(char *, int, int, int *);
 void
 lower_add_pghpf_commons(void)
 {
-  int symcommon, sym1, sym2, sym3, sym4, sym5, sym6, sym7, sym8, dtype;
-  int bsym1, bsym2, bsym3, bsym4, bsym5, bsym6, bsym7, bsym8;
+  int symcommon, sym1, sym2, sym3, sym4, dtype;
+  int bsym1, bsym2, bsym3, bsym4;
   int cmsz; /* common member size */
 
   if (!XBIT(57, 0x8000)) {
@@ -3344,7 +3335,7 @@ lower_add_pghpf_commons(void)
 } /* lower_add_pghpf_commons */
 
 static int
-lower_cmptrvar(char *name, int stype, int dtype, int *bsym)
+lower_cmptrvar(const char *name, int stype, int dtype, int *bsym)
 {
   char bname[16];
   int len;
@@ -3357,7 +3348,7 @@ lower_cmptrvar(char *name, int stype, int dtype, int *bsym)
 
   len = strlen(name);
 #if DEBUG
-  assert(len < (sizeof(bname) - 1), "lower_cmptrvar name overflow", 0, 0);
+  assert(len < (int)(sizeof(bname) - 1), "lower_cmptrvar name overflow", 0, 0);
 #endif
   /* win dll target: the variable is actually a pointer-based object,
    * so what's added to the common is the object's pointer variable.
@@ -3415,7 +3406,7 @@ get_cmptrvar(char *name, int stype, int dtype, int *bsym)
 #error "Need to edit lowersym.c to add new TY_... data types"
 #endif
 
-static char *
+static const char *
 putstype(int stype, int sptr)
 {
 /* TRY TO KEEP THESE UNIQUE IN THE FIRST CHARACTER! */
@@ -3499,7 +3490,7 @@ putstype(int stype, int sptr)
   }
 } /* putstype */
 
-static char *
+static const char *
 putsclass(int sclass, int sptr)
 {
 #if SC_MAX != 7
@@ -3537,16 +3528,12 @@ lower_symbol(int sptr)
 {
   int i, params, count, namelen, strip, newline, dtype, altreturn, desc;
   int fvalfirst, fvallast, sc, inmod, pdaln, frommod, cudamodule = 0;
-  int conval, stype, parsyms;
+  int conval, stype;
   int dll;
   int cudaemu, routx = 0;
-  char *name;
+  const char *name;
   char tempname[15];
   int retdesc;
-
-  if (!IS_STB_FILE()) {
-    int scope = SCOPEG(sptr);
-  }
 
   strip = 0;
   newline = 0;
@@ -4738,7 +4725,7 @@ lower_symbols(void)
   if (OUTPUT_DWARF)
     scan_for_dwarf_module();
 
-  for (sptr = 1; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = 1; sptr < (int)stb.stg_avail; ++sptr) {
     if (SCG(sptr) == SC_DUMMY)
       propagate_byval_visit(sptr);
 
@@ -4965,7 +4952,7 @@ lower_symbols(void)
     if (STB_LOWER())
       lower_pstride_info(gbl.stbfil);
   }
-  for (sptr = 1; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = 1; sptr < (int)stb.stg_avail; ++sptr) {
     int socptr;
     if (!VISITG(sptr))
       continue;
@@ -5022,7 +5009,7 @@ lower_symbols(void)
     }
   }
   /* restore TY_PTR stuff to its original type */
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     int dtype;
     switch (STYPEG(sptr)) {
     case ST_MEMBER:
@@ -5041,7 +5028,7 @@ lower_symbols(void)
       DTYPEP(sptr, dtype);
     }
   }
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     /* restore data types of procedures/entries */
     if (STYPEG(sptr) == ST_PROC || STYPEG(sptr) == ST_ENTRY) {
       if (FVALG(sptr)) {
@@ -5109,7 +5096,7 @@ void
 lower_fill_member_parent(void)
 {
   int sptr;
-  for (sptr = stb.firstosym; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = stb.firstosym; sptr < (int)stb.stg_avail; ++sptr) {
     int tag, s;
     int dtype = DTYPEG(sptr);
     switch (DTY(dtype)) {
@@ -5314,7 +5301,7 @@ static void
 lower_fileinfo_llvm()
 {
   int fihx;
-  char *dirname, *filename, *funcname, *fullname;
+  const char *dirname, *filename, *funcname, *fullname;
 
   if (!STB_LOWER())
     return;
@@ -5354,7 +5341,6 @@ stb_lower_sym_header()
   ISZ_T bss_addr;
   INITEM *p;
   static int first_time = 1;
-  int i;
   FILE *tmpfile = lowersym.lowerfile;
 
   if (!STB_LOWER()) {
@@ -5548,9 +5534,9 @@ _stb_fixup_ifacearg(int sptr)
 void
 stb_fixup_llvmiface()
 {
-  int sptr, params, i, newdsc, fval;
+  int sptr;
   /* go through iface symbols */
-  for (sptr = 1; sptr < stb.stg_avail; ++sptr) {
+  for (sptr = 1; sptr < (int)stb.stg_avail; ++sptr) {
     if (STYPEG(sptr) == ST_PROC) {
       if (SCG(sptr) == SC_NONE ||
           (SCG(sptr) == SC_EXTERN &&
@@ -5600,7 +5586,7 @@ check_debug_alias(SPTR sptr)
           !strcmp(SYMNAME(sptr), SYMNAME(HASHLKG(sptr)))) {
         putbit("has_alias", 1);
         fprintf(lowersym.lowerfile, " %d:%s",
-                strlen(SYMNAME(sptr)), SYMNAME(HASHLKG(sptr)));
+                (int)strlen(SYMNAME(sptr)), SYMNAME(HASHLKG(sptr)));
       } else {
         SPTR candidate = sptr;
         while (candidate) {
@@ -5612,7 +5598,7 @@ check_debug_alias(SPTR sptr)
         if (candidate) {
           putbit("has_alias", 1);
           fprintf(lowersym.lowerfile, " %d:%s",
-                  strlen(SYMNAME(dbgref_symbol.altname[candidate]->sptr)),
+                  (int)strlen(SYMNAME(dbgref_symbol.altname[candidate]->sptr)),
                   SYMNAME(dbgref_symbol.altname[candidate]->sptr));
         } else {
           putbit("has_alias", 0);

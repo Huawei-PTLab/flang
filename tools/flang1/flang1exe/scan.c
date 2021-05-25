@@ -41,7 +41,7 @@ static int read_card(void);
 static void write_card(void);
 static int check_pgi_pragma(char *);
 static int check_pragma(char *);
-static int ic_strncmp(char *, char *);
+static int ic_strncmp(const char *, const char *);
 static LOGICAL is_lineblank(char *);
 static void crunch(void);
 static int classify_smp(void);
@@ -53,8 +53,8 @@ static int classify_pgi_dir(void);
 static int classify_kernel_pragma(void);
 static void alpha(void);
 static int get_id_name(char *, int);
-static LOGICAL is_keyword(char *, int, char *);
-static int cmp(char *, char *, int *);
+static LOGICAL is_keyword(char *, int, const char *);
+static int cmp(const char *, const char *, int *);
 static int is_ident(char *);
 static int is_digit_string(char *);
 static int get_kind_id(char *);
@@ -75,7 +75,7 @@ static void ff_check_stmtb(void);
 static void check_continuation(int);
 static LOGICAL is_next_char(char *, int);
 static int double_type(char *, int *);
-void add_headerfile(char *, int, int);
+void add_headerfile(const char *, int, int);
 
 /*  external declarations  */
 
@@ -181,7 +181,7 @@ typedef struct { /* include-stack contents: */
   FILE *fd;
   int lineno;
   int findex;
-  char *fname;
+  const char *fname;
   LOGICAL list_now;
   int card_type;          /* type of "look-ahead" card, CT_NONE if NA */
   int sentinel;           /* sentinel of 'card_type'.  Value is one of
@@ -200,7 +200,7 @@ static int hdr_stacksz; /* current size of include stack */
 typedef struct { /* include-stack contents: */
   int lineno;
   int findex;
-  char *fname;
+  const char *fname;
 } HDRSTACK;
 
 static HDRSTACK *hdr_stack = NULL;
@@ -1076,7 +1076,6 @@ get_stmt(void)
   int c, outp;
   LOGICAL endflg; /* this stmt is an END statement */
   char lbuff[8];  /* temporarily holds label name */
-  int in_linedir = 0;
   int lineno;
 
   endflg = FALSE;
@@ -1228,7 +1227,7 @@ get_stmt(void)
     case CT_EOF:
       /* pop include  */
       if (incl_level > 0) {
-        char *save_filenm;
+        const char *save_filenm;
 
         incl_level--;
         if (incl_stack[incl_level].is_freeform) {
@@ -1382,7 +1381,7 @@ get_stmt(void)
 }
 
 void
-add_headerfile(char *fname_buff, int cl, int includedir)
+add_headerfile(const char *fname_buff, int cl, int includedir)
 {
   if (!XBIT(120, 0x4000000)) {
     if (hdr_level == 0) {
@@ -1446,7 +1445,7 @@ line_directive(void)
   char *p;
   char *to;
   int cl;
-  char *tmp_ptr;
+  const char *tmp_ptr;
 
   /*
    * The syntax of a line directive is:
@@ -1526,7 +1525,6 @@ get_fn(void)
    */
   char *p;
   int len;
-  int i;
 
   if (XBIT(120, 0x40000))
     return;
@@ -1612,7 +1610,7 @@ read_card(void)
   char *p; /* pointer into cardb */
   LOGICAL tab_seen;
   int ct_init;
-  char *tmp_ptr;
+  const char *tmp_ptr;
 
   assert(!gbl.eof_flag, "read_card:err", gbl.eof_flag, 4);
   sentinel = SL_NONE;
@@ -2036,7 +2034,7 @@ check_pragma(char *beg)
  * null-terminated.  length of str is at least the length of pattern.
  */
 static int
-ic_strncmp(char *str, char *pattern)
+ic_strncmp(const char *str, const char *pattern)
 {
   int n;
   int ch;
@@ -4009,7 +4007,6 @@ taskloop:
     break;
   }
 
-ret:
   currc = cp;
   return tkntyp;
 
@@ -4076,7 +4073,6 @@ classify_dec(void)
     break;
   }
 
-ret:
   currc = cp;
   return tkntyp;
 
@@ -4104,7 +4100,6 @@ classify_pragma(void)
               */
   int c, savec;
   char *ip;
-  int k;
 
   /* skip any leading white space */
 
@@ -4135,7 +4130,6 @@ classify_pragma(void)
     break;
   }
 
-ret:
   currc = cp;
   return tkntyp;
 
@@ -4163,7 +4157,6 @@ classify_pgi_pragma(void)
               * the length of a keyword. */
   int c, savec;
   char *ip;
-  int k;
 
   /* skip any leading white space */
   cp = currc;
@@ -4190,7 +4183,6 @@ classify_pgi_pragma(void)
     goto ill_dir;
   scn.stmtyp = tkntyp;
 
-ret:
   currc = cp;
   return tkntyp;
 
@@ -4214,7 +4206,6 @@ classify_pgi_dir(void)
               * the length of a keyword. */
   int c, savec;
   char *ip;
-  int k;
 
   /* skip any leading white space */
   cp = currc;
@@ -4243,7 +4234,6 @@ classify_pgi_dir(void)
     goto ill_dir;
   scn.stmtyp = tkntyp;
 
-ret:
   currc = cp;
   return tkntyp;
 
@@ -4271,7 +4261,6 @@ classify_kernel_pragma(void)
               * the length of a keyword. */
   int c, savec;
   char *ip;
-  int k;
 
   /* skip any leading white space */
   cp = currc;
@@ -4299,7 +4288,6 @@ classify_kernel_pragma(void)
     goto ill_dir;
   scn.stmtyp = tkntyp;
 
-ret:
   currc = cp;
   return tkntyp;
 
@@ -4324,7 +4312,6 @@ classify_ac_type(void)
 {
   char *cp, *ip;
   int c, idlen;
-  int colon = 0;
   int paren = 0;
 
   /* skip any leading white space */
@@ -5049,7 +5036,7 @@ alpha(void)
   if (exp_ptr_assign && !exp_attr) {
     if (idlen < 2)
       goto return_identifier;
-    if (sem.type_mode == 2 && idlen >= strlen("procedure"))
+    if (sem.type_mode == 2 && idlen >= (int)strlen("procedure"))
       goto get_keyword;
     if (*cp == ' ')
       cp++;
@@ -5541,7 +5528,6 @@ get_keyword:
   case TK_NOPASS:
   case TK_EXTENDS:
   case TK_CONTIGUOUS:
-  id_attr_shared:
     if (exp_attr)
       scmode = SCM_ID_ATTR;
     break;
@@ -5877,7 +5863,6 @@ init_ktable(KTABLE *ktable)
 {
   int nkwds;
   KWORD *base;
-  char *kwd;
   int i;
   int ch;
 
@@ -5930,7 +5915,7 @@ get_id_name(char *id, int idlen)
  * exact match.
  */
 static LOGICAL
-is_keyword(char *id, int idlen, char *kwd)
+is_keyword(char *id, int idlen, const char *kwd)
 {
   int len;
 
@@ -6090,7 +6075,7 @@ get_kind_value(int knd)
 static int
 keyword(char *id, KTABLE *ktable, int *keylen, LOGICAL exact)
 {
-  int chi, low, high, p, kl, cond;
+  int chi, low, high, p, cond;
   KWORD *base;
 
   /* convert first character (a letter) of an identifier into a subscript */
@@ -6128,10 +6113,10 @@ keyword(char *id, KTABLE *ktable, int *keylen, LOGICAL exact)
  *  When 0 is returned, keylen is set to length of keyword.
  */
 static int
-cmp(char *id, char *kw, int *keylen)
+cmp(const char *id, const char *kw, int *keylen)
 {
   char c;
-  char *first = kw;
+  const char *first = kw;
 
   do {
     if ((c = *(id++)) != *kw) {
@@ -6204,7 +6189,7 @@ get_cstring(char *p, int *len)
 }
 
 static void fmt_putchar(int);
-static void fmt_putstr(char *);
+static void fmt_putstr(const char *);
 static void char_to_text(int);
 
 static struct {
@@ -6343,7 +6328,7 @@ fmt_putchar(int ch)
 }
 
 static void
-fmt_putstr(char *str)
+fmt_putstr(const char *str)
 {
   int ch;
 
@@ -6426,7 +6411,6 @@ get_number(int cplxno)
     goto state2;
   assert(isdig(c), "get_number: bad start", (int)c, 3);
 
-state1: /* digits  */
   do {
     c = *++cp;
   } while (isdig(c));
@@ -6970,7 +6954,7 @@ static void
 check_ccon(void)
 {
   char c, *save_currc, *nextc;
-  INT num[4], val[4], val1[4];
+  INT num[4], val[4];
   int tok1;
   int rdx, idx;
   INT swp;
@@ -7050,7 +7034,6 @@ check_ccon(void)
   rdx = 0;
   idx = 1;
   if (tok1 == TK_K_ICON || tkntyp == TK_K_ICON) {
-    int dtype;
     if (tok1 != TK_K_ICON) {
       /*  swap to put in form  k_icon, xxx */
       swp = num[0];
@@ -7246,7 +7229,7 @@ push_include(char *p)
   fullname = getitem(8, MAX_PATHNAME_LEN + 1);
   if (incl_level < MAX_IDEPTH) {
     if (flg.idir) {
-      for (c = 0; (p = flg.idir[c]); ++c)
+      for (c = 0; (p = flg.idir[(int)c]); ++c)
         if (fndpath(begin, fullname, MAX_PATHNAME_LEN, p) == 0)
           goto found;
     }
@@ -7354,7 +7337,7 @@ scan_include(char *str)
   dirname = getitem(8, MAX_PATHNAME_LEN + 1);
   if (incl_level < MAX_IDEPTH) {
     if (flg.idir) {
-      for (c = 0; (p = flg.idir[c]); ++c)
+      for (c = 0; (p = flg.idir[(int)c]); ++c)
         if (fndpath(str, fullname, MAX_PATHNAME_LEN, p) == 0)
           goto found;
     }
@@ -7428,7 +7411,7 @@ not_found:
 
 static int options_seen = FALSE; /* TRUE if OPTIONS seen in prev. subpg. */
 struct c {
-  char *cmd;
+  const char *cmd;
   INT caselabel;
 };
 static int getindex(struct c *, int, char *);
@@ -7645,7 +7628,6 @@ scan_options(void)
     if (savec != '=')
       continue;
 
-  skip_opt: /* find the beginning of an option */
     while (TRUE) {
       p++;
       if (*p == '/' || *p == '\0') {
@@ -7679,7 +7661,7 @@ getindex(struct c *table, int num_elem, char *string)
     i++;
   }
   if (!l) {
-    if (len == strlen(table[i].cmd))
+    if (len == (int)strlen(table[i].cmd))
       fnd = i;
     /* check next value to see if it matches, too */
     else if ((++i < num_elem) &&
@@ -7741,8 +7723,7 @@ static void
 ff_get_stmt(void)
 {
   char *p;
-  int c, outp;
-  int in_linedir = 0;
+  int c;
 
   card_count = 0;
   ff_state.cavail = &stmtb[0];
@@ -7771,7 +7752,7 @@ ff_get_stmt(void)
     case CT_EOF:
       /* pop include  */
       if (incl_level > 0) {
-        char *save_filenm;
+        const char *save_filenm;
 
         incl_level--;
         if (!incl_stack[incl_level].is_freeform) {
@@ -8395,7 +8376,6 @@ ff_prescan(void)
       while (TRUE) {
         c = *++inptr;
         if (c == '\n') {
-          char *q;
           if (ff_state.amper_ptr == NULL)
             goto exit_ff_prescan;
           last_char[card_count - 1] = ff_state.amper_ptr - stmtb - 1;
@@ -8536,7 +8516,6 @@ ff_get_noncomment(char *inptr)
     FLANG_FALLTHROUGH;
   case CT_INITIAL:
   case CT_CONTINUATION:
-  cont_shared:
     check_continuation(curr_line);
     put_astfil(curr_line, &printbuff[8], TRUE);
     if (card_count == 0) {
@@ -8561,9 +8540,7 @@ ff_get_label(char *inp)
 {
   int c;
   int cnt;       /* number of characters processed */
-  char lbuff[8]; /* temporarily holds label name */
   char *labp;
-  int outp;
 
   scn.currlab = 0;
   cnt = 0;
@@ -9015,7 +8992,6 @@ _read_token(INT *tknv)
 {
   int i;
   int fr_type;
-  char *pp;
   static int prev_lineno = 0;
   static int incl_level = 0;
   static int lineno = 0;
@@ -9183,7 +9159,7 @@ _rd_tkline(char **tkbuf, int *tkbuf_sz)
     while (isblank(*p)) /* skip blank characters */
       ++p;
     if (!isdig(*p)) {
-      char *tmp_ptr;
+      const char *tmp_ptr;
       tmp_ptr = gbl.curr_file;
       if (hdr_level)
         gbl.curr_file = hdr_stack[hdr_level - 1].fname;
@@ -9219,7 +9195,6 @@ _rd_token(INT *tknv)
   char *p, *q;
   int kind;
   int dtype;
-  int col;
 
   _rd_tkline(&tkbuf, &tkbuf_sz);
 #if DEBUG
@@ -9434,7 +9409,6 @@ get_num(int radix)
 {
   char *p;
   INT val;
-  static char buffer[64];
 
   while (*tkp == ' ')
     tkp++;
@@ -9466,7 +9440,7 @@ get_string(char *dest)
 static void
 realloc_stmtb(void)
 {
-  int which;
+  int which = 0;
   if (stmtb == stmtbefore)
     which = 1;
   max_card += 20;
