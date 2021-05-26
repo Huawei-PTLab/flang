@@ -1276,7 +1276,7 @@ static int
 MakeReplacement(int ast, int l)
 {
   int optype, rast;
-  int lop, linv, lvar, rop, rinv, rvar, subscr[MAXSUBS], numdim, asd, s, any;
+  int lop, linv, lvar, rop, rinv, rvar, subscr[MAXDIMS], numdim, asd, s, any;
   switch (A_TYPEG(ast)) {
   case A_PAREN:
     return MakeReplacement(A_LOPG(ast), l);

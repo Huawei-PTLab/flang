@@ -64,8 +64,8 @@
 /*  should replace local MAX_FNAME_LENs with: */
 #define MAX_FILENAME_LEN 256
 
-/* maximum number of array subscripts */
-#define MAXSUBS 7
+/* Max number of dimensions. F'2008 requires 15. */
+#define MAXDIMS 15
 
 typedef int8_t INT8;
 typedef int16_t INT16;

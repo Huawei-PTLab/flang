@@ -2048,7 +2048,7 @@ write_parent_pointers(int parent, int level)
 /* final table size is max dimensions plus 2. The 0th element holds the
  * scalar subroutine and the last element holds the elemental subroutine.
  */
-#define FINAL_TABLE_SZ 9
+#define FINAL_TABLE_SZ (MAXDIMS + 2)
 
 static int
 build_final_table(DTYPE dtype, SPTR ft[FINAL_TABLE_SZ])

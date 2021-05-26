@@ -1434,6 +1434,12 @@ _sect(int ast, int i8)
 #define SECTZBASE 0x00400000
 #define SEQSECTION 0x20000000
 #define TEMPLATE 0x00010000
+#define RANKMASK1 0x5555
+#define RANKMASK2 0x1555
+#define RANKMASK3 0x3333
+#define RANKMASK4 0x1333
+#define RANKMASK5 0x0707
+#define RANKSHIFT 8
   int argt, newargt, f, funcast;
   int astoldsd, astnewsd, astrank, astflags;
   int sptroldsd, sptrnewsd;
@@ -1475,9 +1481,10 @@ _sect(int ast, int i8)
   if (flags & 0x100) /* BOGUSFLAG */
     return 0;
   /* output dimensions is the pop count of flags */
-  dims = (flags & 0x55) + ((flags >> 1) & 0x15);
-  dims = (dims & 0x33) + ((dims >> 2) & 0x13);
-  dims += (dims >> 4);
+  dims = (flags & RANKMASK1) + ((flags >> 1) & RANKMASK2);
+  dims = (dims & RANKMASK3) + ((dims >> 2) & RANKMASK4);
+  dims = (dims & RANKMASK5) + ((dims >> 4) & RANKMASK5);
+  dims += (dims >> RANKSHIFT);
   dims = dims & 0xf;
   if (dims > rank || dims <= 0)
     return 0;
@@ -3212,7 +3219,7 @@ conv_fused_forall(int std, int ast, int *stdnextp)
 
     stmt = A_IFSTMTG(forall);
     if (stmt)
-      rewrite_asn(stmt, 0, FALSE, MAXSUBS);
+      rewrite_asn(stmt, 0, FALSE, MAXDIMS);
     if (stmt) {
       if (A_SRCG(stmt) != A_DESTG(stmt)) {
         add_stmt_before(stmt, stdnext);
@@ -3349,7 +3356,7 @@ is_same_mask_in_fused(int std, int *pos)
   int list1, listp;
   int isptr;
   int i;
-  int reverse[7];
+  int reverse[MAXDIMS];
   int n;
   CTYPE *ct;
   int max;
@@ -3442,7 +3449,7 @@ conv_forall(int std)
   int nd;
   CTYPE *ct;
   int i;
-  int revers[7];
+  int revers[MAXDIMS];
   int pos, cnt;
   LOGICAL samemask;
   int lhs_sptr, lhs_ast;
@@ -3642,7 +3649,7 @@ conv_forall(int std)
   }
   */
   arg_gbl.std = stdnext;
-  rewrite_asn(stmt, 0, FALSE, MAXSUBS);
+  rewrite_asn(stmt, 0, FALSE, MAXDIMS);
   if (stmt) {
     /* perhaps should move this part related to elemental function
      * to another function.
@@ -3676,7 +3683,7 @@ conv_forall(int std)
       /* b(i) = scalar_temp */
       ast = mk_assn_stmt(lhs, result_ast, dt);
       std = add_stmt_after(ast, std);
-      rewrite_asn(ast, 0, FALSE, MAXSUBS);
+      rewrite_asn(ast, 0, FALSE, MAXDIMS);
     } else if (A_TYPEG(rhs) == A_INTR &&
                (A_OPTYPEG(rhs) == I_ADJUSTL || A_OPTYPEG(rhs) == I_ADJUSTR)) {
       /* make a scalar temp instead of an array to avoid allocating memory. In
@@ -3805,7 +3812,7 @@ get_temp_forall2(int forall_ast, int subscr_ast, int alloc_stmt,
                  int dealloc_stmt, int dty, int ast_dty)
 {
   int sptr, astd, dstd, asd;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int par, ndim, lp, std, ast, ast2, i, fg, forloop, fg2, lp2;
   int save_sc;
   int dtype = dty ? dty : (DDTG(A_DTYPEG(ast_dty)));
@@ -4719,7 +4726,7 @@ position_finder(int forall, int ast)
   int list1, listp;
   int isptr;
   int i;
-  int reverse[7];
+  int reverse[MAXDIMS];
   int n;
   int pos;
 
@@ -5464,7 +5471,7 @@ _linearize_func(int ast, int *dummy)
         continue;
       }
       if (needs_linearization(sptr) && use_offset(sptr)) {
-        int subscr[7];
+        int subscr[MAXDIMS];
         if (param && POINTERG(param)) {
           subscr[0] = astb.i1;
         } else if ((STYPEG(sptr) != ST_MEMBER || POINTERG(sptr)) &&

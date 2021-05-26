@@ -119,8 +119,8 @@ module I8(__norm2)
   end function sum_of_squares_real8
 
 ! calculate norm2() of a single real(4) dimensional array. It is called by 
-! routines of the form norm2(array, dim) where arrays rank >= 1 and <= 7 
-! and dim <= rank.
+! routines of the form norm2(array, dim) where arrays rank >= 1 and <= 7
+! (<= 15 for F'2008) and dim <= rank.
   function norm_real4(array) result(res)
     implicit none
 
@@ -140,8 +140,8 @@ module I8(__norm2)
   end function norm_real4
 
 ! calculate norm2() of a single real(8) dimensional array. It is called by 
-! routines of the form norm2(array, dim) where arrays rank >= 1 and <= 7 
-! and dim <= rank.
+! routines of the form norm2(array, dim) where arrays rank >= 1 and <= 7
+! (<= 15 for F'2008) and dim <= rank.
 ! The handling of fast, relaxed and precise cases based on compiler supplied 
 ! 'pfr' is described later
   function norm_real8(array, pfr) result(res)
@@ -1042,15 +1042,1311 @@ subroutine F90(nodim_7_real8) (res, array, pfr)
               end do
             end do
           end do
-        end do        
+        end do
 
 100 continue
         res = res_under_exceptions (naninput, return_inf, sum, scinv)
       endif
 
       call restore_unf_state(unf_save)
-  end select 
+  end select
 end subroutine F90(nodim_7_real8)
+
+subroutine F90(nodim_8_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, array_size, array_lbnd(8), array_ubnd(8)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,:))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_8_real4)
+
+subroutine F90(nodim_8_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, array_size, array_lbnd(8), array_ubnd(8), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,:))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    call compensated_sum_of_squares(array(i,j,k,l,m,n,o,:), s, sum)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      call precise_sum_of_squares (array(i,j,k,l,m,n,o,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                      if (return_inf) then
+                        goto 100
+                      endif
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_8_real8)
+
+subroutine F90(nodim_9_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, p, array_size, array_lbnd(9), array_ubnd(9)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,p,:))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_9_real4)
+
+subroutine F90(nodim_9_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, p, array_size, array_lbnd(9), array_ubnd(9), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,p,:))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    do p = array_lbnd(8), array_ubnd(8)
+                      call compensated_sum_of_squares(array(i,j,k,l,m,n,o,p,:), s, sum)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        call precise_sum_of_squares (array(i,j,k,l,m,n,o,p,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                        if (return_inf) then
+                         goto 100
+                        endif
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_9_real8)
+
+subroutine F90(nodim_10_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, array_size, array_lbnd(10), array_ubnd(10)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,p,q,:))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_10_real4)
+
+subroutine F90(nodim_10_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, array_size, array_lbnd(10), array_ubnd(10), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,p,q,:))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    do p = array_lbnd(8), array_ubnd(8)
+                      do q = array_lbnd(9), array_ubnd(9)
+                        call compensated_sum_of_squares(array(i,j,k,l,m,n,o,p,q,:), s, sum)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          call precise_sum_of_squares (array(i,j,k,l,m,n,o,p,q,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                          if (return_inf) then
+                           goto 100
+                          endif
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_10_real8)
+
+subroutine F90(nodim_11_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, array_size, array_lbnd(11), array_ubnd(11)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,p,q,r,:))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_11_real4)
+
+subroutine F90(nodim_11_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, array_size, array_lbnd(11), array_ubnd(11), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,p,q,r,:))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    do p = array_lbnd(8), array_ubnd(8)
+                      do q = array_lbnd(9), array_ubnd(9)
+                        do r = array_lbnd(10), array_ubnd(10)
+                          call compensated_sum_of_squares(array(i,j,k,l,m,n,o,p,q,r,:), s, sum)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            call precise_sum_of_squares (array(i,j,k,l,m,n,o,p,q,r,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                            if (return_inf) then
+                             goto 100
+                            endif
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_11_real8)
+
+subroutine F90(nodim_12_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, array_size, array_lbnd(12), array_ubnd(12)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do t = array_lbnd(11), array_ubnd(11)
+                          sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,p,q,r,t,:))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_12_real4)
+
+subroutine F90(nodim_12_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, array_size, array_lbnd(12), array_ubnd(12), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,p,q,r,t,:))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    do p = array_lbnd(8), array_ubnd(8)
+                      do q = array_lbnd(9), array_ubnd(9)
+                        do r = array_lbnd(10), array_ubnd(10)
+                          do t = array_lbnd(11), array_ubnd(11)
+                            call compensated_sum_of_squares(array(i,j,k,l,m,n,o,p,q,r,t,:), s, sum)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              call precise_sum_of_squares (array(i,j,k,l,m,n,o,p,q,r,t,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                              if (return_inf) then
+                               goto 100
+                              endif
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_12_real8)
+
+subroutine F90(nodim_13_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, u, array_size, array_lbnd(13), array_ubnd(13)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do t = array_lbnd(11), array_ubnd(11)
+                          do u = array_lbnd(12), array_ubnd(12)
+                            sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,p,q,r,t,u,:))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_13_real4)
+
+subroutine F90(nodim_13_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, u, array_size, array_lbnd(13), array_ubnd(13), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              do u = array_lbnd(12), array_ubnd(12)
+                                sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,p,q,r,t,u,:))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    do p = array_lbnd(8), array_ubnd(8)
+                      do q = array_lbnd(9), array_ubnd(9)
+                        do r = array_lbnd(10), array_ubnd(10)
+                          do t = array_lbnd(11), array_ubnd(11)
+                            do u = array_lbnd(12), array_ubnd(12)
+                              call compensated_sum_of_squares(array(i,j,k,l,m,n,o,p,q,r,t,u,:), s, sum)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              do u = array_lbnd(12), array_ubnd(12)
+                                call precise_sum_of_squares (array(i,j,k,l,m,n,o,p,q,r,t,u,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                                if (return_inf) then
+                                 goto 100
+                                endif
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_13_real8)
+
+subroutine F90(nodim_14_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, u, v, array_size, array_lbnd(14), array_ubnd(14)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do t = array_lbnd(11), array_ubnd(11)
+                          do u = array_lbnd(12), array_ubnd(12)
+                            do v = array_lbnd(13), array_ubnd(13)
+                              sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,p,q,r,t,u,v,:))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_14_real4)
+
+subroutine F90(nodim_14_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, u, v, array_size, array_lbnd(14), array_ubnd(14), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              do u = array_lbnd(12), array_ubnd(12)
+                                do v = array_lbnd(13), array_ubnd(13)
+                                  sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,p,q,r,t,u,v,:))
+                                end do
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    do p = array_lbnd(8), array_ubnd(8)
+                      do q = array_lbnd(9), array_ubnd(9)
+                        do r = array_lbnd(10), array_ubnd(10)
+                          do t = array_lbnd(11), array_ubnd(11)
+                            do u = array_lbnd(12), array_ubnd(12)
+                              do v = array_lbnd(13), array_ubnd(13)
+                                call compensated_sum_of_squares(array(i,j,k,l,m,n,o,p,q,r,t,u,v,:), s, sum)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              do u = array_lbnd(12), array_ubnd(12)
+                                do v = array_lbnd(13), array_ubnd(13)
+                                  call precise_sum_of_squares (array(i,j,k,l,m,n,o,p,q,r,t,u,v,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                                  if (return_inf) then
+                                    goto 100
+                                  endif
+                                end do
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_14_real8)
+
+subroutine F90(nodim_15_real4) (res, array)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:,:), res
+  real(8) :: sum, dres
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, u, v, w, array_size, array_lbnd(15), array_ubnd(15)
+
+  if (is_contiguous(array)) then
+    start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:,:,:,:))
+    array_size = size(array)
+    call I8(stride_1_norm2_real4) (start, array_size, res)
+  else
+    sum = zero
+    array_lbnd = lbound(array)
+    array_ubnd = ubound(array)
+
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do t = array_lbnd(11), array_ubnd(11)
+                          do u = array_lbnd(12), array_ubnd(12)
+                            do v = array_lbnd(13), array_ubnd(13)
+                              do w = array_lbnd(14), array_ubnd(14)
+                                sum = sum + sum_of_squares_real4 (array(i,j,k,l,m,n,o,p,q,r,t,u,v,w,:))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+    dres = dsqrt(sum)
+    res = real(dres)
+  endif
+end subroutine F90(nodim_15_real4)
+
+subroutine F90(nodim_15_real8) (res, array, pfr)
+  use I8(__norm2)
+  use ieee_arithmetic
+  use ieee_exceptions
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:,:), res, sum, sc, s, scinv, y
+  integer(8) :: start, i, j, k, l, m, n, o, p, q, r, t, u, v, w, array_size, array_lbnd(15), array_ubnd(15), range
+  integer(4) :: pfr
+  logical :: unf_save, unf, ovf_halting, unf_halting, ovf, return_inf, naninput
+
+  select case (pfr)
+    case (1)
+      if (is_contiguous(array)) then
+        start = loc(array(:,:,:,:,:,:,:,:,:,:,:,:,:,:,:))
+        array_size = size(array)
+        call I8(stride_1_norm2_real8) (start, array_size, res)
+      else
+        sum = zero
+        array_lbnd = lbound(array)
+        array_ubnd = ubound(array)
+
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              do u = array_lbnd(12), array_ubnd(12)
+                                do v = array_lbnd(13), array_ubnd(13)
+                                  do w = array_lbnd(14), array_ubnd(14)
+                                    sum = sum + sum_of_squares_real8 (array(i,j,k,l,m,n,o,p,q,r,t,u,v,w,:))
+                                  end do
+                                end do
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+        res = dsqrt(sum)
+      endif
+    case (2)
+      !add more constraints here
+      !placeholder for precise function
+      sum = zero
+      array_lbnd = lbound(array)
+      array_ubnd = ubound(array)
+      array_size = size(array)
+
+      call save_unf_state(unf_save, unf)
+      call set_halting_mode(ovf_halting, unf_halting)
+      sum = zero; s = zero;
+      do i = array_lbnd(1), array_ubnd(1)
+        do j = array_lbnd(2), array_ubnd(2)
+          do k = array_lbnd(3), array_ubnd(3)
+            do l = array_lbnd(4), array_ubnd(4)
+              do m = array_lbnd(5), array_ubnd(5)
+                do n = array_lbnd(6), array_ubnd(6)
+                  do o = array_lbnd(7), array_ubnd(7)
+                    do p = array_lbnd(8), array_ubnd(8)
+                      do q = array_lbnd(9), array_ubnd(9)
+                        do r = array_lbnd(10), array_ubnd(10)
+                          do t = array_lbnd(11), array_ubnd(11)
+                            do u = array_lbnd(12), array_ubnd(12)
+                              do v = array_lbnd(13), array_ubnd(13)
+                                do w = array_lbnd(14), array_ubnd(14)
+                                  call compensated_sum_of_squares(array(i,j,k,l,m,n,o,p,q,r,t,u,v,w,:), s, sum)
+                                end do
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+      res = dsqrt(sum)
+      call check_ovf_unf(ovf, ovf_halting, unf, unf_halting)
+
+      if (use_precise_method(unf, res)) then
+        INIT_SCALARS()
+        do i = array_lbnd(1), array_ubnd(1)
+          do j = array_lbnd(2), array_ubnd(2)
+            do k = array_lbnd(3), array_ubnd(3)
+              do l = array_lbnd(4), array_ubnd(4)
+                do m = array_lbnd(5), array_ubnd(5)
+                  do n = array_lbnd(6), array_ubnd(6)
+                    do o = array_lbnd(7), array_ubnd(7)
+                      do p = array_lbnd(8), array_ubnd(8)
+                        do q = array_lbnd(9), array_ubnd(9)
+                          do r = array_lbnd(10), array_ubnd(10)
+                            do t = array_lbnd(11), array_ubnd(11)
+                              do u = array_lbnd(12), array_ubnd(12)
+                                do v = array_lbnd(13), array_ubnd(13)
+                                  do w = array_lbnd(14), array_ubnd(14)
+                                    call precise_sum_of_squares (array(i,j,k,l,m,n,o,p,q,r,t,u,v,w,:), sum, sc, s, scinv, range, y, return_inf, naninput)
+                                    if (return_inf) then
+                                      goto 100
+                                    endif
+                                  end do
+                                end do
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+
+100 continue
+        res = res_under_exceptions (naninput, return_inf, sum, scinv)
+      endif
+
+      call restore_unf_state(unf_save)
+  end select
+end subroutine F90(nodim_15_real8)
 
 ! The next few routines actually handle dim version of norm2() calls
 ! for each rank of real(4) and real(8) arrays
@@ -1790,3 +3086,4643 @@ subroutine F90(dim_7_real8) (res, array, pfr, dim)
     end do
   endif
 end subroutine F90(dim_7_real8)
+
+subroutine F90(dim_8_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o
+  integer(8) :: array_lbnd(8), array_ubnd(8)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(:,i,j,k,l,m,n,o))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(i,:,j,k,l,m,n,o))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(i,j,:,k,l,m,n,o))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(i,j,k,:,l,m,n,o))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(i,j,k,l,:,m,n,o))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(i,j,k,l,m,:,n,o))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(i,j,k,l,m,n,:,o))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  res(i,j,k,l,m,n,o) = norm_real4(array(i,j,k,l,m,n,o,:))
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_8_real4)
+
+subroutine F90(dim_8_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o
+  integer(8) :: array_lbnd(8), array_ubnd(8)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(:,i,j,k,l,m,n,o), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(i,:,j,k,l,m,n,o), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(i,j,:,k,l,m,n,o), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(i,j,k,:,l,m,n,o), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(i,j,k,l,:,m,n,o), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(i,j,k,l,m,:,n,o), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(i,j,k,l,m,n,:,o), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  res(i,j,k,l,m,n,o) = norm_real8(array(i,j,k,l,m,n,o,:), pfr)
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_8_real8)
+
+subroutine F90(dim_9_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o, p
+  integer(8) :: array_lbnd(9), array_ubnd(9)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(:,i,j,k,l,m,n,o,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,:,j,k,l,m,n,o,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,j,:,k,l,m,n,o,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,j,k,:,l,m,n,o,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,j,k,l,:,m,n,o,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,j,k,l,m,:,n,o,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,j,k,l,m,n,:,o,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,j,k,l,m,n,o,:,p))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    res(i,j,k,l,m,n,o,p) = norm_real4(array(i,j,k,l,m,n,o,p,:))
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_9_real4)
+
+subroutine F90(dim_9_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o, p
+  integer(8) :: array_lbnd(9), array_ubnd(9)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(:,i,j,k,l,m,n,o,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,:,j,k,l,m,n,o,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,j,:,k,l,m,n,o,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,j,k,:,l,m,n,o,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,j,k,l,:,m,n,o,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,j,k,l,m,:,n,o,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,j,k,l,m,n,:,o,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,j,k,l,m,n,o,:,p), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    res(i,j,k,l,m,n,o,p) = norm_real8(array(i,j,k,l,m,n,o,p,:), pfr)
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_9_real8)
+
+subroutine F90(dim_10_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o, p, q
+  integer(8) :: array_lbnd(10), array_ubnd(10)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(:,i,j,k,l,m,n,o,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,:,j,k,l,m,n,o,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,:,k,l,m,n,o,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,k,:,l,m,n,o,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,k,l,:,m,n,o,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,k,l,m,:,n,o,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,k,l,m,n,:,o,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,k,l,m,n,o,:,p,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,k,l,m,n,o,p,:,q))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real4(array(i,j,k,l,m,n,o,p,q,:))
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_10_real4)
+
+subroutine F90(dim_10_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o, p, q
+  integer(8) :: array_lbnd(10), array_ubnd(10)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(:,i,j,k,l,m,n,o,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,:,j,k,l,m,n,o,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,:,k,l,m,n,o,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,k,:,l,m,n,o,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,k,l,:,m,n,o,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,k,l,m,:,n,o,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,k,l,m,n,:,o,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,k,l,m,n,o,:,p,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,k,l,m,n,o,p,:,q), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      res(i,j,k,l,m,n,o,p,q) = norm_real8(array(i,j,k,l,m,n,o,p,q,:), pfr)
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_10_real8)
+
+subroutine F90(dim_11_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o, p, q, r
+  integer(8) :: array_lbnd(11), array_ubnd(11)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(:,i,j,k,l,m,n,o,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,:,j,k,l,m,n,o,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,:,k,l,m,n,o,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,:,l,m,n,o,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,l,:,m,n,o,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,l,m,:,n,o,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,l,m,n,:,o,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,l,m,n,o,:,p,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,l,m,n,o,p,:,q,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,l,m,n,o,p,q,:,r))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,:))
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_11_real4)
+
+subroutine F90(dim_11_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o, p, q, r
+  integer(8) :: array_lbnd(11), array_ubnd(11)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(:,i,j,k,l,m,n,o,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,:,j,k,l,m,n,o,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,:,k,l,m,n,o,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,:,l,m,n,o,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,l,:,m,n,o,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,l,m,:,n,o,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,l,m,n,:,o,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,l,m,n,o,:,p,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,l,m,n,o,p,:,q,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,l,m,n,o,p,q,:,r), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        res(i,j,k,l,m,n,o,p,q,r) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,:), pfr)
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_11_real8)
+
+subroutine F90(dim_12_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s
+  integer(8) :: array_lbnd(12), array_ubnd(12)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(:,i,j,k,l,m,n,o,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,:,j,k,l,m,n,o,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,:,k,l,m,n,o,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,:,l,m,n,o,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,:,m,n,o,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,m,:,n,o,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,m,n,:,o,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,m,n,o,:,p,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,m,n,o,p,:,q,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,m,n,o,p,q,:,r,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,:,s))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,:))
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_12_real4)
+
+subroutine F90(dim_12_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s
+  integer(8) :: array_lbnd(12), array_ubnd(12)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(:,i,j,k,l,m,n,o,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,:,j,k,l,m,n,o,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,:,k,l,m,n,o,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,:,l,m,n,o,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,:,m,n,o,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,m,:,n,o,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,m,n,:,o,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,m,n,o,:,p,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,m,n,o,p,:,q,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,m,n,o,p,q,:,r,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,:,s), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          res(i,j,k,l,m,n,o,p,q,r,s) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,:), pfr)
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_12_real8)
+
+subroutine F90(dim_13_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s, t
+  integer(8) :: array_lbnd(13), array_ubnd(13)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(:,i,j,k,l,m,n,o,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,:,j,k,l,m,n,o,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,:,k,l,m,n,o,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,:,l,m,n,o,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,:,m,n,o,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,:,n,o,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,n,:,o,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,n,o,:,p,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,n,o,p,:,q,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,n,o,p,q,:,r,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,:,s,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,:,t))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 13) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,t,:))
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_13_real4)
+
+subroutine F90(dim_13_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s, t
+  integer(8) :: array_lbnd(13), array_ubnd(13)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(:,i,j,k,l,m,n,o,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,:,j,k,l,m,n,o,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,:,k,l,m,n,o,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,:,l,m,n,o,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,:,m,n,o,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,:,n,o,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,n,:,o,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,n,o,:,p,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,n,o,p,:,q,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,n,o,p,q,:,r,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,:,s,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,:,t), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 13) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            res(i,j,k,l,m,n,o,p,q,r,s,t) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,t,:), pfr)
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_13_real8)
+
+subroutine F90(dim_14_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s, t, u
+  integer(8) :: array_lbnd(14), array_ubnd(14)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(:,i,j,k,l,m,n,o,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,:,j,k,l,m,n,o,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,:,k,l,m,n,o,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,:,l,m,n,o,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,:,m,n,o,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,:,n,o,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,:,o,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,o,:,p,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,o,p,:,q,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,o,p,q,:,r,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,:,s,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,:,t,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 13) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,t,:,u))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 14) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(13), array_ubnd(13)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,t,u,:))
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_14_real4)
+
+subroutine F90(dim_14_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s, t, u
+  integer(8) :: array_lbnd(14), array_ubnd(14)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(:,i,j,k,l,m,n,o,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,:,j,k,l,m,n,o,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,:,k,l,m,n,o,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,:,l,m,n,o,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,:,m,n,o,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,:,n,o,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,:,o,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,o,:,p,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,o,p,:,q,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,o,p,q,:,r,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,:,s,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,:,t,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 13) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,t,:,u), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 14) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(13), array_ubnd(13)
+                              res(i,j,k,l,m,n,o,p,q,r,s,t,u) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,t,u,:), pfr)
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_14_real8)
+
+subroutine F90(dim_15_real4) (res, array, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(4) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s, t, u, v
+  integer(8) :: array_lbnd(15), array_ubnd(15)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(:,i,j,k,l,m,n,o,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,:,j,k,l,m,n,o,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,:,k,l,m,n,o,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,:,l,m,n,o,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,:,m,n,o,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,:,n,o,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,:,o,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,:,p,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,p,:,q,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,p,q,:,r,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,:,s,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,:,t,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 13) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,t,:,u,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 14) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(13), array_ubnd(13)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,t,u,:,v))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 15) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(13), array_ubnd(13)
+                              do v = array_lbnd(14), array_ubnd(14)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real4(array(i,j,k,l,m,n,o,p,q,r,s,t,u,v,:))
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_15_real4)
+
+subroutine F90(dim_15_real8) (res, array, pfr, dim)
+  use I8(__norm2)
+  implicit none
+
+  real(8) :: array(:,:,:,:,:,:,:,:,:,:,:,:,:,:,:), res(:,:,:,:,:,:,:,:,:,:,:,:,:,:)
+  integer(4) :: dim, pfr
+  integer(8) :: i, j, k, l, m, n, o, p, q, r, s, t, u, v
+  integer(8) :: array_lbnd(15), array_ubnd(15)
+
+  array_lbnd = lbound(array)
+  array_ubnd = ubound(array)
+
+  if (dim .eq. 1) then
+    do i = array_lbnd(2), array_ubnd(2)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(:,i,j,k,l,m,n,o,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 2) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(3), array_ubnd(3)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,:,j,k,l,m,n,o,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 3) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(4), array_ubnd(4)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,:,k,l,m,n,o,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 4) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(5), array_ubnd(5)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,:,l,m,n,o,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 5) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(6), array_ubnd(6)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,:,m,n,o,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 6) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(7), array_ubnd(7)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,:,n,o,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 7) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(8), array_ubnd(8)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,:,o,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 8) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(9), array_ubnd(9)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,:,p,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 9) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(10), array_ubnd(10)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,p,:,q,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 10) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(11), array_ubnd(11)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,p,q,:,r,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 11) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(12), array_ubnd(12)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,:,s,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 12) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(13), array_ubnd(13)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,:,t,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 13) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(14), array_ubnd(14)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,t,:,u,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 14) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(13), array_ubnd(13)
+                              do v = array_lbnd(15), array_ubnd(15)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,t,u,:,v), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  else if (dim .eq. 15) then
+    do i = array_lbnd(1), array_ubnd(1)
+      do j = array_lbnd(2), array_ubnd(2)
+        do k = array_lbnd(3), array_ubnd(3)
+          do l = array_lbnd(4), array_ubnd(4)
+            do m = array_lbnd(5), array_ubnd(5)
+              do n = array_lbnd(6), array_ubnd(6)
+                do o = array_lbnd(7), array_ubnd(7)
+                  do p = array_lbnd(8), array_ubnd(8)
+                    do q = array_lbnd(9), array_ubnd(9)
+                      do r = array_lbnd(10), array_ubnd(10)
+                        do s = array_lbnd(11), array_ubnd(11)
+                          do t = array_lbnd(12), array_ubnd(12)
+                            do u = array_lbnd(13), array_ubnd(13)
+                              do v = array_lbnd(14), array_ubnd(14)
+                                res(i,j,k,l,m,n,o,p,q,r,s,t,u,v) = norm_real8(array(i,j,k,l,m,n,o,p,q,r,s,t,u,v,:), pfr)
+                              end do
+                            end do
+                          end do
+                        end do
+                      end do
+                    end do
+                  end do
+                end do
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+  endif
+end subroutine F90(dim_15_real8)

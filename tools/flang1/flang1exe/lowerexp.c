@@ -4499,7 +4499,7 @@ lower_ast(int ast, int *unused)
 {
   int dtype, rdtype, lop, rop, lilm, rilm, ilm = 0, base = 0;
   int ss, ndim, i, sptr, checksubscr, pointersubscr;
-  int subscriptilm[10], subscriptilmx[10], lowerboundilm[10], upperboundilm[10];
+  int subscriptilm[MAXDIMS + 3], subscriptilmx[MAXDIMS + 3], lowerboundilm[MAXDIMS + 3], upperboundilm[MAXDIMS + 3];
   LOGICAL norm;
 
   dtype = A_DTYPEG(ast);

@@ -35,7 +35,7 @@ void ENTFTN(TRANSFER, transfer)(void *rb,         /* result base */
 {
   int result_scalar, source_scalar;
   __INT_T extent, size, rsize, ssize;
-  __INT_T sindex[7];
+  __INT_T sindex[MAXDIMS];
   __INT_T k;
   __INT_T i;
   /*

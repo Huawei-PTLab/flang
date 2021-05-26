@@ -55,6 +55,9 @@
 /*  should replace local MAX_FNAME_LENs with: */
 #define MAX_FILENAME_LEN 256
 
+/* Max number of dimensions. F'2008 requires 15. */
+#define MAXDIMS 15
+
 /* Max function/variable name length, 
  * Function/variable name in C++ can be really long 
  * The length of Fortran function/variable name definition 

@@ -3742,7 +3742,7 @@ errorstop_shared:
           /* An array is being allocated with shape assumed from the
            * MOLD= or SOURCE= expression.
            */
-          int lb_asts[MAXRANK], ub_asts[MAXRANK];
+          int lb_asts[MAXDIMS], ub_asts[MAXDIMS];
           int rank = get_ast_bounds(lb_asts, ub_asts, orig_alloc_source, dtype);
           if (rank < 1) {
             /* MOLD= or SOURCE= is scalar, so set all the bounds to 1:1.
@@ -3982,7 +3982,7 @@ errorstop_shared:
                     if (DTY(src_dtype) == TY_ARRAY) {
                       int ptr_ast;
                       int eldtype, asn_ast;
-                      int subscr[MAXRANK];
+                      int subscr[MAXDIMS];
                       int temp_arr;
 
                       eldtype = DDTG(src_dtype);
@@ -4667,7 +4667,7 @@ errorstop_shared:
              itemp = itemp->next) {
           SST *stkp;
 
-          if (sem.arrdim.ndim >= 7) {
+          if (sem.arrdim.ndim >= MAXDIMS) {
             error(47, 3, gbl.lineno, CNULL, CNULL);
             alloc_error = TRUE;
             break;
@@ -6338,7 +6338,7 @@ static int
 gen_derived_arr_init(int arr_dtype, int strt_std, int end_std)
 {
   int sptr;
-  int subscr[MAXRANK] = {0, 0, 0, 0, 0, 0, 0};
+  int subscr[MAXDIMS] = {0, 0, 0, 0, 0, 0, 0};
   int idx_item;
   int ndim;
   int prev_std;
@@ -6482,7 +6482,7 @@ gen_sourced_allocation(int astdest, int astsrc)
 
   int dest_dtype, astdest2, src_dtype, std2, std3, std4;
   int conform_std, conform_if_std;
-  int subs[MAXRANK];
+  int subs[MAXDIMS];
   int fsptr, argt, flag_con, dest_sdsc_ast, src_sdsc_ast;
   int dtyper, func_ast, ast2;
   int ast, i, asttmp;

@@ -121,7 +121,7 @@ typedef struct {
 typedef struct {
     int    ndim;	/* number of dimensions for this descriptor */
     int    next;	/* next ASD with the same number of subscripts */
-    int    subs[1];	/* 1 <= size <= 7; 0 <= index <= 6 */
+    int    subs[1];	/* 1 <= size <= 15 (for F'2008); 0 <= index <= 14 (for F'2008)*/
 } ASD;
 
 #define ASD_NDIM(i) ((ASD *)&astb.asd.stg_base[i])->ndim
@@ -293,14 +293,14 @@ typedef struct {
     int     ptr0c;	/* 'predefined' ast for non-present character I/O spec*/
     struct {
 	STG_MEMBERS(int);
-	int     hash[7];  /* max # of dimensions */
+	int     hash[MAXDIMS];  /* max # of dimensions */
     } asd;
     STG_DECLARE(std, STD);
     STG_DECLARE(astli, ASTLI);
     STG_DECLARE(argt, int);
     struct {
 	STG_MEMBERS(SHD);
-	int     hash[7];  /* max # of dimensions */
+	int     hash[MAXDIMS];  /* max # of dimensions */
     } shd;
     STG_DECLARE(comstr, char);
     UINT16      implicit[55];  /* implicit dtypes:

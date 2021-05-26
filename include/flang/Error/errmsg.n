@@ -205,7 +205,7 @@ specifier from the other data types.  Suppose, we want to declare arrays
 ARRAYA and ARRAYB to have 8 elements each having an element length of 
 4 bytes.  The difference is that ARRAYA is character and ARRAYB is integer.  
 The declarations would be CHARACTER ARRAYA(8)*4 and INTEGER ARRAYB*4(8).
-.MS S 47 "More than seven dimensions specified for array"
+.MS S 47 "More than fifteen dimensions specified for array"
 .MS S 48 "Illegal use of '*' in declaration of array $"
 An asterisk may be used only as the upper bound of the last dimension.
 .MS S 49 "Illegal use of '*' in non-subroutine subprogram"

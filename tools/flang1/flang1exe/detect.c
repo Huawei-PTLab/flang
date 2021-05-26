@@ -662,7 +662,7 @@ no_comm_class(int a)
   int forall, lhs;
   int align1, sptr1;
   int axis, axis1;
-  LOGICAL single_ok[7];
+  LOGICAL single_ok[MAXDIMS];
 
   asd = A_ASDG(a);
   ndim = ASD_NDIM(asd);
@@ -679,7 +679,7 @@ no_comm_class(int a)
     ARREF_CLASS(arref) = NO_COMM;
     return;
   }
-  for (i = 0; i < 7; i++)
+  for (i = 0; i < MAXDIMS; i++)
     single_ok[i] = FALSE;
 
   no_comm = 0;

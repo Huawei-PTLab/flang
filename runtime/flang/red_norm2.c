@@ -43,8 +43,32 @@ void ENTFTN(NORM2_NODIM, norm2_nodim) (__POINT_T *result, __POINT_T *src, __INT4
       case 7:
         F90_NORM2(nodim_7_real8) (result, src, pfr, src_desc);
         break;
+      case 8:
+        F90_NORM2(nodim_8_real8) (result, src, pfr, src_desc);
+        break;
+      case 9:
+        F90_NORM2(nodim_9_real8) (result, src, pfr, src_desc);
+        break;
+      case 10:
+        F90_NORM2(nodim_10_real8) (result, src, pfr, src_desc);
+        break;
+      case 11:
+        F90_NORM2(nodim_11_real8) (result, src, pfr, src_desc);
+        break;
+      case 12:
+        F90_NORM2(nodim_12_real8) (result, src, pfr, src_desc);
+        break;
+      case 13:
+        F90_NORM2(nodim_13_real8) (result, src, pfr, src_desc);
+        break;
+      case 14:
+        F90_NORM2(nodim_14_real8) (result, src, pfr, src_desc);
+        break;
+      case 15:
+        F90_NORM2(nodim_15_real8) (result, src, pfr, src_desc);
+        break;
       default:
-        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 7\n", src_desc->rank);
+        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 15\n", src_desc->rank);
         __fort_abort(error_msg);
     }
   } else if (src_desc->kind == __REAL4) {
@@ -70,8 +94,32 @@ void ENTFTN(NORM2_NODIM, norm2_nodim) (__POINT_T *result, __POINT_T *src, __INT4
       case 7:
         F90_NORM2(nodim_7_real4) (result, src, src_desc);
         break;
+      case 8:
+        F90_NORM2(nodim_8_real4) (result, src, src_desc);
+        break;
+      case 9:
+        F90_NORM2(nodim_9_real4) (result, src, src_desc);
+        break;
+      case 10:
+        F90_NORM2(nodim_10_real4) (result, src, src_desc);
+        break;
+      case 11:
+        F90_NORM2(nodim_11_real4) (result, src, src_desc);
+        break;
+      case 12:
+        F90_NORM2(nodim_12_real4) (result, src, src_desc);
+        break;
+      case 13:
+        F90_NORM2(nodim_13_real4) (result, src, src_desc);
+        break;
+      case 14:
+        F90_NORM2(nodim_14_real4) (result, src, src_desc);
+        break;
+      case 15:
+        F90_NORM2(nodim_15_real4) (result, src, src_desc);
+        break;
       default:
-        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 7\n", src_desc->rank);
+        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 15\n", src_desc->rank);
         __fort_abort(error_msg);
     }
   } else if (src_desc->len == 0) {
@@ -113,8 +161,32 @@ void ENTFTN(NORM2, norm2) (__POINT_T *result, __POINT_T *src, __INT4_T * pfr, __
       case 7:
         F90_NORM2(dim_7_real8) (result, src, pfr, dim, result_desc, src_desc);
         break;
+      case 8:
+        F90_NORM2(dim_8_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
+      case 9:
+        F90_NORM2(dim_9_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
+      case 10:
+        F90_NORM2(dim_10_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
+      case 11:
+        F90_NORM2(dim_11_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
+      case 12:
+        F90_NORM2(dim_12_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
+      case 13:
+        F90_NORM2(dim_13_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
+      case 14:
+        F90_NORM2(dim_14_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
+      case 15:
+        F90_NORM2(dim_15_real8) (result, src, pfr, dim, result_desc, src_desc);
+        break;
       default:
-        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 7\n", src_desc->rank);
+        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 15\n", src_desc->rank);
         __fort_abort(error_msg);
     }
   } else if (src_desc->kind == __REAL4) {
@@ -140,8 +212,32 @@ void ENTFTN(NORM2, norm2) (__POINT_T *result, __POINT_T *src, __INT4_T * pfr, __
       case 7:
         F90_NORM2(dim_7_real4) (result, src, dim, result_desc, src_desc);
         break;
+      case 8:
+        F90_NORM2(dim_8_real4) (result, src, dim, result_desc, src_desc);
+        break;
+      case 9:
+        F90_NORM2(dim_9_real4) (result, src, dim, result_desc, src_desc);
+        break;
+      case 10:
+        F90_NORM2(dim_10_real4) (result, src, dim, result_desc, src_desc);
+        break;
+      case 11:
+        F90_NORM2(dim_11_real4) (result, src, dim, result_desc, src_desc);
+        break;
+      case 12:
+        F90_NORM2(dim_12_real4) (result, src, dim, result_desc, src_desc);
+        break;
+      case 13:
+        F90_NORM2(dim_13_real4) (result, src, dim, result_desc, src_desc);
+        break;
+      case 14:
+        F90_NORM2(dim_14_real4) (result, src, dim, result_desc, src_desc);
+        break;
+      case 15:
+        F90_NORM2(dim_15_real4) (result, src, dim, result_desc, src_desc);
+        break;
       default:
-        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 7\n", src_desc->rank);
+        sprintf(error_msg, "Rank : %d, can not be less than 1 or greater 15\n", src_desc->rank);
         __fort_abort(error_msg);
     }
   } else if (src_desc->len == 0) {

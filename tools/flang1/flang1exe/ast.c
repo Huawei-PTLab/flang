@@ -82,7 +82,7 @@ ast_init(void)
     assert(astb.asd.stg_base, "ast_init: no room for ASD", astb.asd.stg_size, 4);
 #endif
   }
-  BZERO(astb.asd.hash, int, 7);
+  BZERO(astb.asd.hash, int, MAXDIMS);
   astb.asd.stg_base[0] = 0;
   astb.asd.stg_avail = 1;
 
@@ -93,7 +93,7 @@ ast_init(void)
     assert(astb.shd.stg_base, "ast_init: no room for SHD", astb.shd.stg_size, 4);
 #endif
   } else
-    BZERO(astb.shd.hash, int, 7);
+    BZERO(astb.shd.hash, int, MAXDIMS);
   astb.shd.stg_base[0].lwb = 0;
   astb.shd.stg_base[0].upb = 0;
   astb.shd.stg_base[0].stride = 0;
@@ -1826,7 +1826,7 @@ mk_asd(int *subs, int numdim)
 {
   int i;
   int asd;
-  assert(numdim > 0 && numdim <= MAXSUBS, "mk_subscr: bad numdim", numdim,
+  assert(numdim > 0 && numdim <= MAXDIMS, "mk_subscr: bad numdim", numdim,
          ERR_Fatal);
   /* search the existing ASDs with the same number of dimensions */
   for (asd = astb.asd.hash[numdim - 1]; asd != 0; asd = ASD_NEXT(asd)) {
@@ -2034,7 +2034,7 @@ mkshape(DTYPE dtype)
   if (DTY(dtype) != TY_ARRAY)
     return 0;
   numdim = ADD_NUMDIM(dtype);
-  if (numdim > 7 || numdim < 1) {
+  if (numdim > MAXDIMS || numdim < 1) {
     interr("mkshape: bad numdim", numdim, 3);
     numdim = 1;
     add_shape_rank(numdim);
@@ -2065,14 +2065,14 @@ mk_mem_ptr_shape(int parent, int mem, DTYPE dtype)
   int newlwb, newupb, newextnt;
   int sdsc;
   int subs[1];
-  int lwbds[MAXRANK];
-  int upbds[MAXRANK];
+  int lwbds[MAXDIMS];
+  int upbds[MAXDIMS];
   int asd;
 
   if (DTY(dtype) != TY_ARRAY)
     return 0;
   numdim = ADD_NUMDIM(dtype);
-  if (numdim > 7 || numdim < 1) {
+  if (numdim > MAXDIMS || numdim < 1) {
     interr("mkshape: bad numdim", numdim, 3);
     numdim = 1;
     add_shape_rank(numdim);
@@ -2149,7 +2149,7 @@ static struct {
     int lwb;
     int upb;
     int stride;
-  } spec[MAXRANK]; /* maximum number of dimensions */
+  } spec[MAXDIMS]; /* maximum number of dimensions */
 } _shd;
 
 int
@@ -3463,7 +3463,7 @@ bnds_remap_list(int subscr_ast)
 int
 replace_ast_subtree(int original, int subtree, int replacement)
 {
-  int p, ast, subs[MAXRANK], nsubs, i, asd, dtype;
+  int p, ast, subs[MAXDIMS], nsubs, i, asd, dtype;
   /* only A_ID, A_SUBSCR, A_SUBSTR, A_MEM allowed */
   if (subtree == replacement) /* in a%b(1)%j replace a%b(1) by a%b(1) */
     return original;
@@ -4231,7 +4231,7 @@ ast_rewrite(int ast)
   int devsrc;
   int asd;
   int numdim;
-  int subs[MAXRANK];
+  int subs[MAXDIMS];
   int argt;
   int argcnt;
   int argtnew;
@@ -4345,7 +4345,7 @@ ast_rewrite(int ast)
       changes = TRUE;
     asd = A_ASDG(ast);
     numdim = ASD_NDIM(asd);
-    assert(numdim > 0 && numdim <= 7, "ast_rewrite: bad numdim", ast, 4);
+    assert(numdim > 0 && numdim <= MAXDIMS, "ast_rewrite: bad numdim", ast, 4);
     for (i = 0; i < numdim; ++i) {
       sub = ast_rewrite((int)ASD_SUBS(asd, i));
       if (sub != ASD_SUBS(asd, i))
@@ -5249,7 +5249,7 @@ ast_clear_repl(int ast)
     ast_clear_repl((int)A_LOPG(ast));
     asd = A_ASDG(ast);
     numdim = ASD_NDIM(asd);
-    assert(numdim > 0 && numdim <= 7, "ast_clear_repl: bad numdim", ast, 4);
+    assert(numdim > 0 && numdim <= MAXDIMS, "ast_clear_repl: bad numdim", ast, 4);
     for (i = 0; i < numdim; ++i)
       ast_clear_repl((int)ASD_SUBS(asd, i));
     break;
@@ -9261,7 +9261,7 @@ rewrite_ast_with_new_dtype(int ast, DTYPE dtype)
     case A_MEM:
       return mk_member(A_PARENTG(ast), A_MEMG(ast), dtype);
     case A_SUBSCR: {
-      int j, rank = get_ast_rank(ast), asd = A_ASDG(ast), subs[MAXRANK];
+      int j, rank = get_ast_rank(ast), asd = A_ASDG(ast), subs[MAXDIMS];
       for (j = 0; j < rank; ++j) {
         subs[j] = ASD_SUBS(asd, j);
       }
@@ -9431,7 +9431,7 @@ add_extent_subscripts(int to_ast, int rank, const int extent_asts[],
                       DTYPE elt_dtype)
 {
   if (rank > 0) {
-    int j, triple_asts[MAXRANK];
+    int j, triple_asts[MAXDIMS];
     for (j = 0; j < rank; ++j) {
       triple_asts[j] = mk_triple(astb.bnd.one, extent_asts[j], 0);
     }
@@ -9445,7 +9445,7 @@ add_bounds_subscripts(int to_ast, int rank, const int lower_bound_asts[],
                       const int upper_bound_asts[], DTYPE elt_dtype)
 {
   if (rank > 0) {
-    int j, triple_asts[MAXRANK];
+    int j, triple_asts[MAXDIMS];
     for (j = 0; j < rank; ++j) {
       triple_asts[j] = mk_triple(lower_bound_asts[j], upper_bound_asts[j], 0);
     }
@@ -9461,7 +9461,7 @@ int
 add_shapely_subscripts(int to_ast, int from_ast, DTYPE arr_dtype,
                        DTYPE elt_dtype)
 {
-  int extent_asts[MAXRANK];
+  int extent_asts[MAXDIMS];
   int rank = get_ast_extents(extent_asts, from_ast, arr_dtype);
   return add_extent_subscripts(to_ast, rank, extent_asts, elt_dtype);
 }

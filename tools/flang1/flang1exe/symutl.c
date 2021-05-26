@@ -539,8 +539,8 @@ int
 mk_forall_sptr(int forall_ast, int subscr_ast, int *subscr, int elem_dty)
 {
   int astli;
-  int submap[MAXSUBS], arr_sptr, memberast;
-  int i, ndims, lwbnd[MAXSUBS], upbnd[MAXSUBS];
+  int submap[MAXDIMS], arr_sptr, memberast;
+  int i, ndims, lwbnd[MAXDIMS], upbnd[MAXDIMS];
   int sptr, sdtype;
   int single[] = {0, 0, 0, 0, 0, 0, 0};
 
@@ -799,8 +799,8 @@ int
 get_forall_subscr(int forall_ast, int subscr_ast, int *subscr, int elem_dty)
 {
   int astli;
-  int submap[MAXSUBS], arr_sptr, memberast;
-  int i, ndims, lwbnd[MAXSUBS], upbnd[MAXSUBS];
+  int submap[MAXDIMS], arr_sptr, memberast;
+  int i, ndims, lwbnd[MAXDIMS], upbnd[MAXDIMS];
   int sptr, sdtype;
   int single[] = {0, 0, 0, 0, 0, 0, 0};
 
@@ -1053,7 +1053,7 @@ get_temp_forall(int forall_ast, int subscr_ast, int alloc_stmt,
                 int dealloc_stmt, int dty, int ast_dty)
 {
   int sptr;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int par;
   int save_sc;
   int astd, dstd;
@@ -1118,7 +1118,7 @@ int
 get_temp_copy_section(int forall_ast, int lhs, int rhs, int alloc_stmt,
                       int dealloc_stmt, int ast_dty)
 {
-  int sptr, dty, subscr[MAXSUBS];
+  int sptr, dty, subscr[MAXDIMS];
   dty = DDTG(A_DTYPEG(ast_dty));
   sptr = mk_forall_sptr_copy_section(forall_ast, lhs, rhs, subscr, dty);
   mk_mem_allocate(mk_id(sptr), subscr, alloc_stmt, ast_dty);
@@ -1138,7 +1138,7 @@ int
 get_temp_pure(int forall_ast, int lhs, int rhs, int alloc_stmt,
               int dealloc_stmt, int ast_dty)
 {
-  int sptr, dty, subscr[MAXSUBS];
+  int sptr, dty, subscr[MAXDIMS];
   dty = DDTG(A_DTYPEG(ast_dty));
   sptr = mk_forall_sptr_pure(forall_ast, lhs, rhs, subscr, dty);
   mk_mem_allocate(mk_id(sptr), subscr, alloc_stmt, ast_dty);
@@ -1157,7 +1157,7 @@ int
 get_temp_pure_replicated(int sptr, int alloc_stmt, int dealloc_stmt, int astmem)
 {
   int sptr1;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int ptr;
   int hashlk;
   int i, ndim;
@@ -1194,7 +1194,7 @@ int
 get_temp_remapping(int arr_ast, int alloc_stmt, int dealloc_stmt, int dty)
 {
   int sptr;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
 
   sptr = mk_shape_sptr(A_SHAPEG(arr_ast), subscr, dty);
   mk_mem_allocate(mk_id(sptr), subscr, alloc_stmt, arr_ast);
@@ -1468,8 +1468,8 @@ chk_assign_sptr(int arr_ast, char *purpose, int *subscr, int elem_dty, int lhs,
 {
   int arr_sptr;
   int ast;
-  int submap[MAXSUBS];
-  int newsubs[MAXSUBS];
+  int submap[MAXDIMS];
+  int newsubs[MAXDIMS];
   int i, n, j, n1, k;
   int asd, asd1;
   int astli;
@@ -1480,7 +1480,7 @@ chk_assign_sptr(int arr_ast, char *purpose, int *subscr, int elem_dty, int lhs,
   int list;
   int lb, ub;
   int lb1, ub1, st1;
-  int vsubsptr[MAXSUBS], vsubmap[MAXSUBS];
+  int vsubsptr[MAXDIMS], vsubmap[MAXDIMS];
   int extent;
 
   /* find the array */
@@ -1744,8 +1744,8 @@ handle_non_cnst_dim(int arr_ast, char *purpose, int *subscr, int elem_dty,
 {
   int arr_sptr;
   int ast;
-  int submap[MAXSUBS];
-  int newsubs[MAXSUBS];
+  int submap[MAXDIMS];
+  int newsubs[MAXDIMS];
   int i, k;
   int asd;
   int astli;
@@ -1799,8 +1799,8 @@ chk_reduc_sptr(int arr_ast, char *purpose, int *subscr, int elem_dty, int dim,
 {
   int arr_sptr;
   int ast;
-  int submap[MAXSUBS];
-  int newsubs[MAXSUBS];
+  int submap[MAXDIMS];
+  int newsubs[MAXDIMS];
   int i, n, j, k;
   int asd;
   int astli;
@@ -1932,8 +1932,8 @@ mk_spread_sptr(int arr_ast, char *purpose, int *subscr, int elem_dty, int dim,
 {
   int arr_sptr;
   int ast, shape;
-  int submap[MAXSUBS];
-  int newsubs[MAXSUBS];
+  int submap[MAXDIMS];
+  int newsubs[MAXDIMS];
   int i, n, j;
   int asd;
   int astli;
@@ -2148,10 +2148,10 @@ mk_matmul_sptr(int arg1, int arg2, char *purpose, int *subscr, int elem_dty,
 {
   int arr_sptr1, arr_sptr2;
   int ast;
-  int submap1[MAXSUBS], submap2[MAXSUBS];
-  int subscr1[MAXSUBS], subscr2[MAXSUBS];
-  int newsubs1[MAXSUBS], newsubs2[MAXSUBS];
-  int newsubs[MAXSUBS];
+  int submap1[MAXDIMS], submap2[MAXDIMS];
+  int subscr1[MAXDIMS], subscr2[MAXDIMS];
+  int newsubs1[MAXDIMS], newsubs2[MAXDIMS];
+  int newsubs[MAXDIMS];
   int rank1, rank2, rank;
   int i, n, j;
   int flag;
@@ -2365,8 +2365,8 @@ mk_transpose_sptr(int arr_ast, char *purpose, int *subscr, int elem_dty,
 {
   int arr_sptr;
   int ast;
-  int submap[MAXSUBS];
-  int newsubs[MAXSUBS];
+  int submap[MAXDIMS];
+  int newsubs[MAXDIMS];
   int i, n, j;
   int asd;
   int astli;
@@ -2714,7 +2714,7 @@ mk_forall_sptr_copy_section(int forall_ast, int lhs, int rhs, int *subscr,
 {
   int arr_sptr, ssast;
   int ast;
-  int submap[MAXSUBS];
+  int submap[MAXDIMS];
   int i, n, j;
   int asd;
   int sptr;
@@ -2843,7 +2843,7 @@ mk_forall_sptr_gatherx(int forall_ast, int lhs, int rhs, int *subscr,
 {
   int arr_sptr;
   int ast, ssast;
-  int submap[MAXSUBS];
+  int submap[MAXDIMS];
   int i, n, j;
   int asd;
   int sptr;
@@ -2975,7 +2975,7 @@ mk_forall_sptr_gatherx(int forall_ast, int lhs, int rhs, int *subscr,
 int
 mk_forall_sptr_pure(int forall_ast, int lhs, int rhs, int *subscr, int elem_dty)
 {
-  int submap[MAXSUBS];
+  int submap[MAXDIMS];
   int i, j;
   int asd;
   int sptr;
@@ -3063,7 +3063,7 @@ mk_forall_sptr_pure(int forall_ast, int lhs, int rhs, int *subscr, int elem_dty)
 int
 first_element(int ast)
 {
-  int i, n, subs[MAXSUBS], asd, ss, doit, lop, dtype, parent, sptr;
+  int i, n, subs[MAXDIMS], asd, ss, doit, lop, dtype, parent, sptr;
   switch (A_TYPEG(ast)) {
   case A_SUBSCR:
     /* if any subscript is a triplet, take the first one */
@@ -3248,7 +3248,7 @@ mk_mem_allocate(int in_ast, int *subscr, int alloc_stmt, int ast_len_from)
      * the direction just needs to be computed as sign(1,stride).
      */
     if (A_TYPEG(in_ast) == A_ID && (HCCSYMG(sptr) || CCSYMG(sptr))) {
-      int newsubscr[MAXSUBS];
+      int newsubscr[MAXDIMS];
 
       fixup_allocd_tmp_bounds(subscr, newsubscr, n);
 
@@ -3488,7 +3488,7 @@ check_member(int astmem, int astid)
     if (A_TYPEG(lop) != A_ID) {
       return astid;
     } else {
-      int subs[MAXSUBS];
+      int subs[MAXDIMS];
       int i;
       int lop2 = do_check_member_id(astmem, lop);
       int asd = A_ASDG(astid);

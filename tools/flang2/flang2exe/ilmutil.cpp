@@ -1488,7 +1488,7 @@ put_dtype(DTYPE dtype)
     ad = AD_DPTR(dtype);
     numdim = AD_NUMDIM(ad);
     fprintf(xfile, "(");
-    if (numdim >= 1 && numdim <= 7) {
+    if (numdim >= 1 && numdim <= MAXDIMS) {
       int i;
       for (i = 0; i < numdim; ++i) {
         if (i)

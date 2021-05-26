@@ -2580,7 +2580,7 @@ getdtype(DTYPE dtype, char *ptr)
       } else {
         ad = AD_DPTR(dtype);
         numdim = AD_NUMDIM(ad);
-        if (numdim < 1 || numdim > 7) {
+        if (numdim < 1 || numdim > MAXDIMS) {
           sprintf(p, "ndim=%d", numdim);
           numdim = 0;
           p += strlen(p);
@@ -2833,7 +2833,7 @@ _dmp_dent(DTYPE dtypeind, FILE *outfile)
     fprintf(outfile, "  assumrank:%d\n", AD_ASSUMRANK(ad));
     fprintf(outfile, "        zbase: %d   numelm: %d\n", AD_ZBASE(ad),
             AD_NUMELM(ad));
-    if (numdim < 1 || numdim > 7)
+    if (numdim < 1 || numdim > MAXDIMS)
       numdim = 0;
     for (i = 0; i < numdim; i++)
       fprintf(outfile, "        %1d:  mlpyr: %d  lwbd: %d  upbd: %d"

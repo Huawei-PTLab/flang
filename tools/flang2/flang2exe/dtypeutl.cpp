@@ -794,7 +794,7 @@ getdtype(DTYPE dtype, char *ptr)
       if (DTyArrayDesc(dtype) != 0) {
         ad = AD_DPTR(dtype);
         numdim = AD_NUMDIM(ad);
-        if (numdim < 1 || numdim > 7) {
+        if (numdim < 1 || numdim > MAXDIMS) {
           interr("getdtype:bad numdim", 0, ERR_Informational);
           numdim = 0;
         }
@@ -861,7 +861,7 @@ extent_of(DTYPE dtype)
       if (DTyArrayDesc(dtype) != 0) {
         ad = AD_DPTR(dtype);
         numdim = AD_NUMDIM(ad);
-        if (numdim < 1 || numdim > 7) {
+        if (numdim < 1 || numdim > MAXDIMS) {
           interr("extent_of: bad numdim", 0, ERR_Informational);
           numdim = 0;
         }
@@ -995,7 +995,7 @@ _dmp_dent(DTYPE dtypeind, FILE *outfile)
     }
     ad = AD_DPTR(dtypeind);
     numdim = AD_NUMDIM(ad);
-    if (numdim < 1 || numdim > 7) {
+    if (numdim < 1 || numdim > MAXDIMS) {
       interr("dmp_dent:bad numdim", 0, ERR_Informational);
       numdim = 0;
     }

@@ -1911,7 +1911,7 @@ add_private_allocatable(int old, int new)
        * so that lower() will correctly assign the .A temporaries.
        */
       int numdim;
-      int subs[MAXRANK];
+      int subs[MAXDIMS];
       int i;
       if (ALLOCATTRG(old)) {
         /*

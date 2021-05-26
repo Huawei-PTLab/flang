@@ -48,10 +48,10 @@ typedef struct {
   int v;           /* array section's VRF index */
   int ndims;       /* number of dimension in the array */
   __INT_T elemsz;  /* size of each element */
-  __INT_T idx[7];  /* current index values for each dimension */
-  TRIPLE sect[7];  /* lower : upper : stride for each dimensin */
-  __INT_T mult[7]; /* multiplier for each section */
-  __INT_T lwb[7];  /* declared lower bound for each dimension */
+  __INT_T idx[MAXDIMS];  /* current index values for each dimension */
+  TRIPLE sect[MAXDIMS];  /* lower : upper : stride for each dimensin */
+  __INT_T mult[MAXDIMS]; /* multiplier for each section */
+  __INT_T lwb[MAXDIMS];  /* declared lower bound for each dimension */
   char *loc_addr;  /* array's base address */
 } SB;
 
@@ -68,10 +68,10 @@ typedef struct {
   int v;              /* array section's VRF index */
   int ndims;          /* number of dimension in the array */
   __BIGINT_T elemsz;  /* size of each element */
-  __BIGINT_T idx[7];  /* current index values for each dimension */
-  TRIPLE sect[7];     /* lower : upper : stride for each dimensin */
-  __BIGINT_T mult[7]; /* multiplier for each section */
-  __BIGINT_T lwb[7];  /* declared lower bound for each dimension */
+  __BIGINT_T idx[MAXDIMS];  /* current index values for each dimension */
+  TRIPLE sect[MAXDIMS];     /* lower : upper : stride for each dimensin */
+  __BIGINT_T mult[MAXDIMS]; /* multiplier for each section */
+  __BIGINT_T lwb[MAXDIMS];  /* declared lower bound for each dimension */
   char *loc_addr;     /* array's base address */
 } SB;
 

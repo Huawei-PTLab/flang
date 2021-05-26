@@ -139,9 +139,6 @@ typedef struct {
 #undef MAXCPUS
 #define MAXCPUS 256
 
-/* Max number of dimensions.  F'2008 requires 15,  Intel is 31. */
-#define MAXRANK 7
-
 extern GBL gbl;
 #define GBL_CURRFUNC gbl.currsub
 #define TPNVERSION 25

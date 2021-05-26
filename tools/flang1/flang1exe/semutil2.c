@@ -1399,7 +1399,7 @@ size_of_array(DTYPE dtype)
       if (DTY(dtype + 2) != 0) {
         ad = AD_DPTR(dtype);
         numdim = AD_NUMDIM(ad);
-        if (numdim < 1 || numdim > 7) {
+        if (numdim < 1 || numdim > MAXDIMS) {
           interr("extent_of: bad numdim", 0, 1);
           numdim = 0;
         }
@@ -2197,7 +2197,7 @@ _can_fold(int ast)
 /* small routines used by constructf90(). generate subscripts as they are
  * needed. */
 
-static int sub_i = 7;
+static int sub_i = MAXDIMS;
 static int tmpids[MAXDIMS];
 
 static void
@@ -2205,14 +2205,14 @@ init_constructf90()
 {
   int i;
 
-  for (i = 0; i < 7; i++) {
+  for (i = 0; i < MAXDIMS; i++) {
     acs.element_cnt[i] = 0;     /* # of individual constructor items  */
     acs.indx[i] = astb.bnd.one; /* subscript of first element */
     acs.indx_tmpid[i] = 0;      /* no subscripting temporary yet */
     acs.subs[i] = astb.bnd.one;
     tmpids[i] = 0;
   }
-  sub_i = 7;
+  sub_i = MAXDIMS;
 }
 
 static int
@@ -3151,7 +3151,7 @@ constructf90(int arr, ACL *aclp)
     pop_subscript();
   }
 
-  if (sub_i != 7)
+  if (sub_i != MAXDIMS)
     interr("sub_i in constructf90 is not back", sub_i, 2);
 }
 
@@ -6767,7 +6767,7 @@ build_array_list(ASTLIST *list, int ast, DTYPE dtype, int sptr)
       break;
     asd = A_ASDG(ast);
     ndim = ASD_NDIM(asd);
-    assert(ndim <= 7, "build_array_list, >7 dimensions", ndim, 3);
+    assert(ndim <= MAXDIMS, "build_array_list, >15 dimensions", ndim, 3);
     assert(A_SHAPEG(A_LOPG(ast)), "build_array_list, shapeless array", 0, 3);
     for (i = 0; i < ndim; ++i) {
       int ss;
@@ -10540,7 +10540,7 @@ eval_const_array_triple_section(ACL *curr_e)
 
     sb.sub[ndims].stride = get_ival(v->dtype, v->conval);
 
-    if (++ndims >= 7) {
+    if (++ndims >= MAXDIMS) {
       interr("initialization expression: too many dimensions\n", 0, 3);
       return 0;
     }

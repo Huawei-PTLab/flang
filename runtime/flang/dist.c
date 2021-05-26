@@ -1506,7 +1506,13 @@ void I8(__fort_finish_section)(F90_Desc *d)
    dimension followed by a bitmask indicating vector dimensions (not
    scalar subscripts.) */
 
-#define BOGUSFLAG 0x100
+#define BOGUSFLAG 0x10000
+#define RANKMASK1 0x5555
+#define RANKMASK2 0x1555
+#define RANKMASK3 0x3333
+#define RANKMASK4 0x1333
+#define RANKMASK5 0x0707
+#define RANKSHIFT 8
 
 /* for F90 */
 void ENTFTN(SECT, sect)(F90_Desc *d, F90_Desc *a,
@@ -1541,13 +1547,14 @@ void ENTFTN(SECT, sect)(F90_Desc *d, F90_Desc *a,
 
 /* determine section rank - popcnt of flags bits */
 
-#if MAXDIMS != 7
+#if MAXDIMS != 15
   __fort_abort("SECT: need to recode for different MAXDIMS");
 #endif
-  rank = (flags & 0x55) + (flags >> 1 & 0x15);
-  rank = (rank & 0x33) + (rank >> 2 & 0x13);
-  rank += rank >> 4;
-  rank &= 0x7;
+  rank = (flags & RANKMASK1) + (flags >> 1 & RANKMASK2);
+  rank = (rank & RANKMASK3) + (rank >> 2 & RANKMASK4);
+  rank = (rank & RANKMASK5) + (rank >> 4 & RANKMASK5);
+  rank += rank >> RANKSHIFT;
+  rank &= 0xf;
 
   /* initialize descriptor */
 
@@ -1675,13 +1682,14 @@ void ENTF90(SECT, sect)(F90_Desc *d, F90_Desc *a, __INT_T *prank,
 
 /* determine section rank - popcnt of flags bits */
 
-#if MAXDIMS != 7
+#if MAXDIMS != 15
   __fort_abort("SECT: need to recode for different MAXDIMS");
 #endif
-  rank = (flags & 0x55) + (flags >> 1 & 0x15);
-  rank = (rank & 0x33) + (rank >> 2 & 0x13);
-  rank += rank >> 4;
-  rank &= 0x7;
+  rank = (flags & RANKMASK1) + (flags >> 1 & RANKMASK2);
+  rank = (rank & RANKMASK3) + (rank >> 2 & RANKMASK4);
+  rank = (rank & RANKMASK5) + (rank >> 4 & RANKMASK5);
+  rank += rank >> RANKSHIFT;
+  rank &= 0xf;
 
   /* initialize descriptor */
 
@@ -1759,7 +1767,7 @@ void ENTF90(SECT1, sect1)(F90_Desc *d, F90_Desc *a, __INT_T *prank,
 
   flags = *bfg;
 
-#if MAXDIMS != 7
+#if MAXDIMS != 15
   __fort_abort("SECT: need to recode for different MAXDIMS");
 #endif
   /* determine section rank - popcnt of flags bits */
@@ -1914,7 +1922,7 @@ void ENTF90(SECT2, sect2)(F90_Desc *d, F90_Desc *a, __INT_T *prank,
 
   flags = *bfg;
 
-#if MAXDIMS != 7
+#if MAXDIMS != 15
   __fort_abort("SECT: need to recode for different MAXDIMS");
 #endif
   /* determine section rank - popcnt of flags bits */
@@ -2080,7 +2088,7 @@ void ENTF90(SECT3, sect3)(F90_Desc *d, F90_Desc *a, __INT_T *prank,
 
   flags = *bfg;
 
-#if MAXDIMS != 7
+#if MAXDIMS != 15
   __fort_abort("SECT: need to recode for different MAXDIMS");
 #endif
   /* determine section rank - popcnt of flags bits */
@@ -2271,7 +2279,7 @@ void ENTFTN(SECT3, sect3)(F90_Desc *d, F90_Desc *a,
 
   flags = *bfg;
 
-#if MAXDIMS != 7
+#if MAXDIMS != 15
   __fort_abort("SECT: need to recode for different MAXDIMS");
 #endif
   /* determine section rank - popcnt of flags bits */

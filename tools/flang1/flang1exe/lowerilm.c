@@ -4214,7 +4214,7 @@ lower_stmt(int std, int ast, int lineno, int label)
           symfunc = lower_makefunc(mkRteRtnNm(RTE_ptr_ina), DT_NONE, FALSE);
         }
         num = 0;
-        for (i = 0; i < count && i < 7; ++i) {
+        for (i = 0; i < count && i < MAXDIMS; ++i) {
           lower_expression(ARGT_ARG(args, i));
           if (i == 3) {
             lower_disable_ptr_chk = 1;
@@ -4298,7 +4298,7 @@ lower_stmt(int std, int ast, int lineno, int label)
           symfunc = lower_makefunc(mkRteRtnNm(RTE_ptr_out), DT_NONE, FALSE);
         }
         num = 0;
-        for (i = 0; i < count && i < 7; ++i) {
+        for (i = 0; i < count && i < MAXDIMS; ++i) {
           lower_expression(ARGT_ARG(args, i));
           if (i == 2) {
             lower_disable_ptr_chk = 1;
@@ -6536,7 +6536,7 @@ lower_data_stmts(void)
       if (okaddr) {
         fprintf(lower_ilm_file, "Init Label:%d\n", dinitval);
       } else {
-        int dest, src, subs[7], ent, ast;
+        int dest, src, subs[MAXDIMS], ent, ast;
         if (size_of(DT_PTR) == size_of(DT_INT8)) {
           int v[4], sptr;
           v[2] = v[3] = 0;

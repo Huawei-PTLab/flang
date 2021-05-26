@@ -16,19 +16,19 @@ typedef struct {
   int ifast;
   int endifast;
   LITEMF *inner_cyclic;
-  int c_lof[7];
-  int idx[7];
-  int cb_init[7]; /* cyclic_block initialization asts */
-  int cb_do[7];
-  int cb_block[7];
-  int cb_inc[7];
-  int cb_enddo[7];
+  int c_lof[MAXDIMS];
+  int idx[MAXDIMS];
+  int cb_init[MAXDIMS]; /* cyclic_block initilization asts */
+  int cb_do[MAXDIMS];
+  int cb_block[MAXDIMS];
+  int cb_inc[MAXDIMS];
+  int cb_enddo[MAXDIMS];
 
-  int c_init[7]; /* cyclic initialization asts */
-  int c_inc[7];
-  int c_dupl[7];
-  int c_idx[7];
-  int c_dstt[7];
+  int c_init[MAXDIMS]; /* cyclic initilization asts */
+  int c_inc[MAXDIMS];
+  int c_dupl[MAXDIMS];
+  int c_idx[MAXDIMS];
+  int c_dstt[MAXDIMS];
 } CTYPE;
 
 typedef union {
@@ -70,9 +70,9 @@ typedef union {
     int sectvsub;
     int sectnvsub;
     int sectm;
-    int sectv[7];
-    int v[7];
-    int permute[7];
+    int sectv[MAXDIMS];
+    int v[MAXDIMS];
+    int permute[MAXDIMS];
     int vflag;
     int pflag;
     int vdim;
@@ -155,9 +155,9 @@ typedef union {
     int nsget;
     LITEMF *sget;
     CTYPE *cyclic;
-    int fuselp[7][MAXFUSE];
-    int fusedstd[7][MAXFUSE];
-    int nfuse[7];
+    int fuselp[MAXDIMS][MAXFUSE];
+    int fusedstd[MAXDIMS][MAXFUSE];
+    int nfuse[MAXDIMS];
     int header;
     int barr1;
     int barr2;
@@ -321,7 +321,7 @@ typedef struct {
 
 extern OPTSUM optsum;
 
-#define BOGUSFLAG 0x100
+#define BOGUSFLAG 0x10000
 #define NOTSECTFLAG 0 /* remove this flag, 0x200 */
 #define NOREINDEX 0x2000000
 

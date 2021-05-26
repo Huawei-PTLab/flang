@@ -2482,7 +2482,7 @@ ompaccel_copy_arraydescriptors(SPTR arg_sptr)
   // check global in the module?
   AD_SDSC(new_ad) = ompaccel_tinfo_current_get_devsptr((SPTR)AD_SDSC(org_ad));
 
-  if (numdim >= 1 && numdim <= 7) {
+  if (numdim >= 1 && numdim <= MAXDIMS) {
     int i;
     for (i = 0; i < numdim; ++i) {
       AD_LWBD(new_ad, i) =

@@ -68,7 +68,7 @@ static int mk_poly_test(int dest, int src, int optype, int intrin_type);
 static int count_allocatable_members(int ast);
 
 FINFO_TBL finfot;
-static int init_idx[MAXSUBS + MAXSUBS];
+static int init_idx[MAXDIMS + MAXDIMS];
 static int num_init_idx;
 struct pure_gbl pure_gbl;
 
@@ -185,7 +185,7 @@ void
 reset_init_idx(void)
 {
   int i;
-  for (i = 0; i < MAXSUBS + MAXSUBS; i++) {
+  for (i = 0; i < MAXDIMS + MAXDIMS; i++) {
     init_idx[i] = 0;
   }
 }
@@ -201,7 +201,7 @@ transform_init(void)
   pghpf_local_mode_sptr = 0;
   init_region();
   if (gbl.rutype != RU_BDATA) {
-    for (i = 0; i < MAXSUBS + MAXSUBS; i++) {
+    for (i = 0; i < MAXDIMS + MAXDIMS; i++) {
       init_idx[i] = 0;
     }
     num_init_idx = 0;
@@ -591,7 +591,7 @@ rewrite_block_where(void)
   int list;
   int wheresym;
   int sptr_lhs;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int where_std, elsewhere_std, endwhere_std;
   int outer_where_std, outer_endwhere_std;
   LOGICAL nice_where;
@@ -979,9 +979,9 @@ rewrite_block_forall(void)
   int ast, ast1, ast2;
   int list, stmt;
   int expr, expr1, where_expr;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int forallb_std, endforall_std;
-  int stack[MAXSUBS], top;
+  int stack[MAXDIMS], top;
   int newforall;
   int forallb;
 
@@ -1000,7 +1000,7 @@ rewrite_block_forall(void)
       forallb_std = std;
       stack[top] = forallb_std;
       top++;
-      assert(top <= MAXSUBS && top >= 0,
+      assert(top <= MAXDIMS && top >= 0,
              "rewrite_block_forall: FORALL with no ENDFORALL", 0, 4);
     } else if (A_TYPEG(ast) == A_ENDFORALL) {
       endforall_std = std;
@@ -1513,7 +1513,7 @@ normalize_forall_array(int forall_ast, int arr_ast, int inlist)
   int ast;
   int ast1;
   int asd;
-  int subs[MAXSUBS];
+  int subs[MAXDIMS];
   int numdim;
   int l;
   int lwb, stride;
@@ -1535,7 +1535,7 @@ normalize_forall_array(int forall_ast, int arr_ast, int inlist)
     interr("normalize_forall_array:bad ast type", arr_ast, 3);
   }
 
-  if (numdim < 1 || numdim > MAXSUBS) {
+  if (numdim < 1 || numdim > MAXDIMS) {
     interr("normalize_forall_array:bad numdim", shape, 3);
     numdim = 0;
   }
@@ -1603,7 +1603,7 @@ normalize_forall_array(int forall_ast, int arr_ast, int inlist)
      * a(j)%b(i)
      */
     int ast1;
-    int subs1[MAXSUBS];
+    int subs1[MAXDIMS];
     int n1;
     ast1 =
         mk_subscr(A_PARENTG(ast), subs, numdim, DDTG(A_DTYPEG(A_PARENTG(ast))));
@@ -1732,7 +1732,7 @@ normalize_forall(int forall_ast, int asgn_ast, int inlist)
     }
     if (A_TYPEG(A_LOPG(asgn_ast)) == A_MEM) {
       /* the parent might have an array index */
-      int asd, i, n, subs[MAXSUBS], dtype;
+      int asd, i, n, subs[MAXDIMS], dtype;
       asd = A_ASDG(asgn_ast);
       ast = normalize_forall(forall_ast, A_PARENTG(A_LOPG(asgn_ast)), inlist);
       if (ast != A_PARENTG(A_LOPG(asgn_ast))) {
@@ -2132,7 +2132,7 @@ inline_spread_shifts(int asgn_ast, int forall_ast, int inlist)
   int list, listp, astli;
   int newlist;
   int count, nidx;
-  int subs[MAXSUBS];
+  int subs[MAXDIMS];
   int ndim;
   int dim, cdim, shd;
   int srcarray, maskarray;
@@ -2188,7 +2188,7 @@ inline_spread_shifts(int asgn_ast, int forall_ast, int inlist)
     for (listp = list; listp != 0; listp = ASTLI_NEXT(listp)) {
       subs[count] = listp;
       count++;
-      assert(count <= MAXSUBS, "inline_spread_shifts: wrong  forall", newforall,
+      assert(count <= MAXDIMS, "inline_spread_shifts: wrong  forall", newforall,
              4);
     }
 
@@ -2373,7 +2373,7 @@ make_forall(int shape, int astmem, int mask_ast, int lc)
    */
 
   numdim = SHD_NDIM(shape);
-  if (numdim < 1 || numdim > MAXSUBS) {
+  if (numdim < 1 || numdim > MAXDIMS) {
     interr("make_forall:bad numdim", shape, 3);
     numdim = 0;
   }
@@ -3062,6 +3062,14 @@ build_conformable_func_node(int astdest, int astsrc)
     RTE_conformable_nnv,
     RTE_conformable_nnv,
     RTE_conformable_nnv,
+    RTE_conformable_nnv,
+    RTE_conformable_nnv,
+    RTE_conformable_nnv,
+    RTE_conformable_nnv,
+    RTE_conformable_nnv,
+    RTE_conformable_nnv,
+    RTE_conformable_nnv,
+    RTE_conformable_nnv,
     RTE_conformable_nnv
   };
   static FtnRtlEnum rtl_conformable_dn[] = {
@@ -3071,12 +3079,28 @@ build_conformable_func_node(int astdest, int astsrc)
     RTE_conformable_dnv,
     RTE_conformable_dnv,
     RTE_conformable_dnv,
+    RTE_conformable_dnv,
+    RTE_conformable_dnv,
+    RTE_conformable_dnv,
+    RTE_conformable_dnv,
+    RTE_conformable_dnv,
+    RTE_conformable_dnv,
+    RTE_conformable_dnv,
+    RTE_conformable_dnv,
     RTE_conformable_dnv
   };
   static FtnRtlEnum rtl_conformable_nd[] = {
     RTE_conformable_1dv,
     RTE_conformable_2dv,
     RTE_conformable_3dv,
+    RTE_conformable_ndv,
+    RTE_conformable_ndv,
+    RTE_conformable_ndv,
+    RTE_conformable_ndv,
+    RTE_conformable_ndv,
+    RTE_conformable_ndv,
+    RTE_conformable_ndv,
+    RTE_conformable_ndv,
     RTE_conformable_ndv,
     RTE_conformable_ndv,
     RTE_conformable_ndv,
@@ -3453,7 +3477,7 @@ static int
 gen_dos_over_shape(int shape, int std)
 {
   int i;
-  int subs[MAXSUBS];
+  int subs[MAXDIMS];
   int ndim = SHD_NDIM(shape);
   for (i = 0; i < ndim; i++) {
     int astdo = mk_stmt(A_DO, 0);
@@ -3594,7 +3618,7 @@ mk_bounds_shape(int shape)
 static int
 build_allocation_item(int astdestparent, int astdestmem)
 {
-  int indx[MAXSUBS];
+  int indx[MAXDIMS];
   int ndim;
   int astitem;
   int sptrdest;
@@ -3902,7 +3926,7 @@ mk_ptr_subscr(int subAst, int std)
    int ptr_ast, ast;
    DTYPE dtype, eldtype;
    int asn_ast, temp_arr;
-   int subscr[MAXRANK];
+   int subscr[MAXDIMS];
 
    if (A_TYPEG(subAst) != A_SUBSCR) {
      return subAst;
@@ -4781,7 +4805,7 @@ static int
 normalize_subscripts(int oldasd, int oldshape, int newshape)
 {
   int i;
-  int newsubs[MAXSUBS];
+  int newsubs[MAXDIMS];
   int ndim = SHD_NDIM(oldshape);
 
   assert(ndim == ASD_NDIM(oldasd), "ndim does not match", ndim, ERR_Fatal);
@@ -4805,7 +4829,7 @@ static int
 subscript_allocmem(int aref, int asd)
 {
   int ndim = ASD_NDIM(asd);
-  int subs[MAXSUBS];
+  int subs[MAXDIMS];
 
   switch (A_TYPEG(aref)) {
   case A_SUBSCR: {

@@ -1568,6 +1568,114 @@ ENTFTN(PTR_SHAPE_ASSN, ptr_shape_assn)
                           &lb[5],&ub[5],&stride[5],
                           &lb[6],&ub[6],&stride[6],&dimflags);
         break;
+      case 8:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],&dimflags);
+        break;
+      case 9:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],
+                          &lb[8],&ub[8],&stride[8],&dimflags);
+        break;
+      case 10:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],
+                          &lb[8],&ub[8],&stride[8],
+                          &lb[9],&ub[9],&stride[9],&dimflags);
+        break;
+      case 11:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],
+                          &lb[8],&ub[8],&stride[8],
+                          &lb[9],&ub[9],&stride[9],
+                          &lb[10],&ub[10],&stride[10],&dimflags);
+        break;
+      case 12:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],
+                          &lb[8],&ub[8],&stride[8],
+                          &lb[9],&ub[9],&stride[9],
+                          &lb[10],&ub[10],&stride[10],
+                          &lb[11],&ub[11],&stride[11],&dimflags);
+        break;
+      case 13:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],
+                          &lb[8],&ub[8],&stride[8],
+                          &lb[9],&ub[9],&stride[9],
+                          &lb[10],&ub[10],&stride[10],
+                          &lb[11],&ub[11],&stride[11],
+                          &lb[12],&ub[12],&stride[12],&dimflags);
+        break;
+      case 14:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],
+                          &lb[8],&ub[8],&stride[8],
+                          &lb[9],&ub[9],&stride[9],
+                          &lb[10],&ub[10],&stride[10],
+                          &lb[11],&ub[11],&stride[11],
+                          &lb[12],&ub[12],&stride[12],
+                          &lb[13],&ub[13],&stride[13],&dimflags);
+        break;
+      case 15:
+        ENTFTN(SECT,sect)(pd,td,&lb[0],&ub[0],&stride[0],
+                          &lb[1],&ub[1],&stride[1],
+                          &lb[2],&ub[2],&stride[2],
+                          &lb[3],&ub[3],&stride[3],
+                          &lb[4],&ub[4],&stride[4],
+                          &lb[5],&ub[5],&stride[5],
+                          &lb[6],&ub[6],&stride[6],
+                          &lb[7],&ub[7],&stride[7],
+                          &lb[8],&ub[8],&stride[8],
+                          &lb[9],&ub[9],&stride[9],
+                          &lb[10],&ub[10],&stride[10],
+                          &lb[11],&ub[11],&stride[11],
+                          &lb[12],&ub[12],&stride[12],
+                          &lb[13],&ub[13],&stride[13],
+                          &lb[14],&ub[14],&stride[14],&dimflags);
+        break;
       default:
         __fort_abort("PTR_SHAPE_ASSN: invalid rank");
       }
@@ -1881,7 +1989,7 @@ ENTF90(C_F_PTR, c_f_ptr)(void **cptr, __INT_T *rank, __INT_T *sz, void **fb,
                          F90_Desc *fd, __INT_T *ft, void *shp, __INT_T *shpt)
 {
   __INT_T one;
-  __INT_T ub[7];
+  __INT_T ub[MAXDIMS];
   __INT_T flags;
   int i, n;
 
@@ -1949,6 +2057,56 @@ ENTF90(C_F_PTR, c_f_ptr)(void **cptr, __INT_T *rank, __INT_T *sz, void **fb,
     ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
 	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
 	    &one, &ub[4], &one, &ub[5], &one, &ub[6] );
+    break;
+  case 8:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7] );
+    break;
+  case 9:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7],
+            &one, &ub[8] );
+    break;
+  case 10:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7],
+	    &one, &ub[8], &one, &ub[9] );
+    break;
+  case 11:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7],
+	    &one, &ub[8], &one, &ub[9], &one, &ub[10] );
+    break;
+  case 12:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7],
+	    &one, &ub[8], &one, &ub[9], &one, &ub[10], &one, &ub[11] );
+    break;
+  case 13:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7],
+	    &one, &ub[8], &one, &ub[9], &one, &ub[10], &one, &ub[11],
+	    &one, &ub[12] );
+    break;
+  case 14:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7],
+	    &one, &ub[8], &one, &ub[9], &one, &ub[10], &one, &ub[11],
+	    &one, &ub[12], &one, &ub[13] );
+    break;
+  case 15:
+    ENTF90(TEMPLATE,template)(fd, rank, &flags, ft, sz,
+	    &one, &ub[0], &one, &ub[1], &one, &ub[2], &one, &ub[3],
+	    &one, &ub[4], &one, &ub[5], &one, &ub[6], &one, &ub[7],
+	    &one, &ub[8], &one, &ub[9], &one, &ub[10], &one, &ub[11],
+	    &one, &ub[12], &one, &ub[13], &one, &ub[14] );
     break;
   }
 }

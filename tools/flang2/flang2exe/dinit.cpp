@@ -66,7 +66,6 @@ static CONST const_err;
 
 static int substr_len; /* length of char substring being init'd */
 
-#define MAXDIMS 7
 #define MAXDEPTH 8
 static DOSTACK dostack[MAXDEPTH];
 static DOSTACK *top;
@@ -1881,12 +1880,12 @@ static struct {
     ISZ_T lowb;
     ISZ_T upb;
     ISZ_T stride;
-  } sub[7];
+  } sub[MAXDIMS];
   struct {
     ISZ_T lowb;
     ISZ_T upb;
     ISZ_T mplyr;
-  } dim[7];
+  } dim[MAXDIMS];
 } sb;
 
 static ISZ_T
@@ -2075,7 +2074,7 @@ eval_const_array_triple_section(CONST *curr_e)
     }
     sb.sub[ndims].stride = get_ival(v->dtype, v->u1.conval);
 
-    if (++ndims >= 7) {
+    if (++ndims >= MAXDIMS) {
       interr("initialization expression: too many dimensions\n", 0, ERR_Severe);
       return CONST_ERR(dtype);
     }
@@ -3991,10 +3990,10 @@ eval_reshape(CONST *arg, DTYPE dtype)
   int *new_index;
   int src_sz, dest_sz;
   int rank;
-  int order[7];
-  int lwb[7];
-  int upb[7];
-  int mult[7];
+  int order[MAXDIMS];
+  int lwb[MAXDIMS];
+  int upb[MAXDIMS];
+  int mult[MAXDIMS];
   int i;
   int count;
   int sz;

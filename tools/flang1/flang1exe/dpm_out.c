@@ -1297,7 +1297,7 @@ wrap_symbol(int sptr, int memberast, int basesptr)
       if (!POINTERG(sptr) && !ALLOCG(sptr) && alloc &&
           (ADJARRG(sptr) || RUNTIMEG(sptr) || ADJLENG(sptr))) {
         if (!ALIGNG(sptr) && !POINTERG(sptr)) {
-          int ast, i, ndim, subscr[7];
+          int ast, i, ndim, subscr[MAXDIMS];
           /* make the subscripts */
           ndim = ADD_NUMDIM(dtype);
           for (i = 0; i < ndim; ++i) {
@@ -3674,7 +3674,7 @@ make_sec_from_ast_chk(int ast, int std, int stdafter, int sec_ast, int sectflag,
   int triple;
   int sptr, fsptr;
   int shape;
-  int subs[7];
+  int subs[MAXDIMS];
   LOGICAL rhs_is_dist;
   int bogus;
   int strd1_cnt;
@@ -4377,7 +4377,7 @@ allocate_one_auto(int sptr)
     if (!ALIGNG(sptr)
     ) {
       ADSC *ad;
-      int r, i, ast, subscr[7];
+      int r, i, ast, subscr[MAXDIMS];
       ad = AD_DPTR(DTYPEG(sptr));
       /* make the subscripts */
       r = AD_NUMDIM(ad);
@@ -4475,7 +4475,7 @@ get_allobnds(int sptr, int ast)
 {
   int i;
   int ndim;
-  int subs[7];
+  int subs[MAXDIMS];
   int lb, ub;
   int arrdsc;
   int sdsc;

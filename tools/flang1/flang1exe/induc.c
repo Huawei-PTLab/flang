@@ -797,7 +797,7 @@ _fam(int ilix, int *fm_p)
   DU *du;
   int op2;
   int asd;
-  int subflg[7];
+  int subflg[MAXDIMS];
 
   if (ilix == srch.load) {
     srch.new_skip = IND_SKIP(srch.ind);

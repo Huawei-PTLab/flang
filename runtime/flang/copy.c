@@ -20,7 +20,7 @@ void I8(print_dist_format)(F90_Desc *);
 
 /* un-permuted axis map */
 
-static int identity_map[MAXDIMS] = {1, 2, 3, 4, 5, 6, 7};
+static int identity_map[MAXDIMS] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
 /* parameters for copy_section */
 
@@ -1035,7 +1035,7 @@ void ENTFTN(TRANSPOSE, transpose)(void *rb, void *sb, F90_Desc *rs,
 {
   char *rp, *sp;
   chdr *ch;
-  int src_axis_map[MAXDIMS] = {2, 1, 3, 4, 5, 6, 7};
+  int src_axis_map[MAXDIMS] = {2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
   if (!ISPRESENT(rb))
     __fort_abort("transpose: result absent or not allocated");

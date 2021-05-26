@@ -1427,8 +1427,8 @@ static struct {
   int elmsz;    /* ili of actual element size (type ir) */
   DTYPE eldt;     /* data type of element */
   int nsubs;    /* number of subscripts */
-  int sub[7];   /* ili for each (actual) subscript */
-  int osub[7];  /* ili for original subscript (before expanding to 64-bit) */
+  int sub[MAXDIMS];   /* ili for each (actual) subscript */
+  int osub[MAXDIMS];  /* ili for original subscript (before expanding to 64-bit) */
   int finalnme; /* final NME */
 } subscr;
 
@@ -1448,7 +1448,7 @@ compute_subscr(ILM *ilmp, bool bigobj)
   int ili2;
   ISZ_T coffset;
   int sub_1;
-  int subs[7];
+  int subs[MAXDIMS];
 
   subscr.nsubs = ILM_OPND(ilmp, 1);
 #if DEBUG
@@ -2953,7 +2953,7 @@ exp_array(ILM_OP opc, ILM *ilmp, int curilm)
 #endif
 
   if (XBIT(125, 0x10000)) {
-    int subs[7], i;
+    int subs[MAXDIMS], i;
     int arrilm;
     DTYPE dtype;
     SPTR sym;

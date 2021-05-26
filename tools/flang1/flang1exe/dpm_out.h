@@ -19,8 +19,8 @@ typedef union {
     int target_descr;
     int conform;
     int collapse;
-    int lb[MAXRANK];
-    int ub[MAXRANK];
+    int lb[MAXDIMS];
+    int ub[MAXDIMS];
     int type;
     int alignee_sc;
     int target_sc;

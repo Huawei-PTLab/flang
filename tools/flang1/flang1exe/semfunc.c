@@ -2577,7 +2577,7 @@ rewrite_subscr(int ast_subscr, int dscptr, int nactuals)
   int i;
   int actarr;
   int asd, numdim;
-  int subs[7]; /* maximum number of dimensions */
+  int subs[MAXDIMS]; /* maximum number of dimensions */
   int triple;
   int subscr;
 
@@ -6234,8 +6234,8 @@ ref_pd(SST *stktop, ITEM *list)
 
     if (sem.dinit_data) {
       int rank;
-      int ubound[7];
-      int lbound[7];
+      int ubound[MAXDIMS];
+      int lbound[MAXDIMS];
       SST bndarry;
       ACL *argacl;
       ACL **r;
@@ -7062,7 +7062,7 @@ ref_pd(SST *stktop, ITEM *list)
 
     stkp = ARG_STK(0); /* source */
     shape1 = SST_SHAPEG(stkp);
-    if (shape1 && SHD_NDIM(shape1) == 7) {
+    if (shape1 && SHD_NDIM(shape1) == MAXDIMS) {
       E74_ARG(pdsym, 0, NULL);
       goto call_e74_arg;
     }
@@ -7342,7 +7342,7 @@ ref_pd(SST *stktop, ITEM *list)
     if (shape_acl && shape_acl->is_const) {
       shape_acl = SST_ACLG(stkp);
       count = get_int_cval(sym_of_ast(AD_NUMELM(AD_DPTR(dtype1))));
-      if (count < 0 || count > 7) {
+      if (count < 0 || count > MAXDIMS) {
         E74_ARG(pdsym, 1, NULL);
         goto call_e74_arg;
       }
@@ -7390,7 +7390,7 @@ ref_pd(SST *stktop, ITEM *list)
         goto call_e74_arg;
       }
       count = get_int_cval(A_SPTRG(tmp));
-      if (count < 0 || count > 7) {
+      if (count < 0 || count > MAXDIMS) {
         E74_ARG(pdsym, 1, NULL);
         goto call_e74_arg;
       }
@@ -7509,12 +7509,12 @@ ref_pd(SST *stktop, ITEM *list)
        *     indices; e.g.,   lwb : upb : stride.
        */
       int arr;
-      int subs[7];
+      int subs[MAXDIMS];
       int asd;
       int dim = 0;
       int nsubs = 1;
       int ix;
-      int shp[7];
+      int shp[MAXDIMS];
       int eldtype;
 
       eldtype = DDTG(A_DTYPEG(ast));

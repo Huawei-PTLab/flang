@@ -764,7 +764,7 @@ ENTFTN(DANDTA, dandta)(DCHAR(date), DCHAR(tbuf), DCHAR(zone),
     tvalues[7] = ms;
     if (valuesd && F90_TAG_G(valuesd) == __DESC) {
       char *la;
-      __INT_T index[7];
+      __INT_T index[MAXDIMS];
 
       for (i = 0; i < F90_RANK_G(valuesd); ++i) {
         if (DIM_UBOUND_G(valuesd, i) < F90_DIM_LBOUND_G(valuesd, i))

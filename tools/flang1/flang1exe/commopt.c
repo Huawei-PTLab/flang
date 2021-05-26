@@ -437,7 +437,7 @@ fuse_forall(int nested)
 static LOGICAL
 is_same_idx(int std, int std1)
 {
-  int idx[7], idx1[7];
+  int idx[MAXDIMS], idx1[MAXDIMS];
   int list, list1, listp;
   int forall, forall1;
   int nidx, nidx1;
@@ -479,7 +479,7 @@ is_same_idx(int std, int std1)
 LOGICAL
 same_forall_size(int lp1, int lp2, int nested)
 {
-  int idx1[7], idx2[7];
+  int idx1[MAXDIMS], idx2[MAXDIMS];
   int itriple1, itriple2;
   int lb1, ub1, st1;
   int lb2, ub2, st2;
@@ -492,7 +492,7 @@ same_forall_size(int lp1, int lp2, int nested)
   int i, k;
   int asd1, asd2;
   int ndim1, ndim2;
-  int order2[7];
+  int order2[MAXDIMS];
   int no;
   int lhs1, lhs2, newlhs2, l, l2;
   int sptr1, sptr2;
@@ -568,7 +568,7 @@ same_forall_size(int lp1, int lp2, int nested)
 static LOGICAL
 same_forall_bnds(int lp1, int lp2, int nested)
 {
-  int idx1[7], idx2[7];
+  int idx1[MAXDIMS], idx2[MAXDIMS];
   int itriple1, itriple2;
   int lb1, ub1, st1;
   int lb2, ub2, st2;
@@ -581,7 +581,7 @@ same_forall_bnds(int lp1, int lp2, int nested)
   int i, k;
   int asd1, asd2;
   int ndim1, ndim2;
-  int order2[7];
+  int order2[MAXDIMS];
   int no;
   int lhs1, lhs2, newlhs2, l, l2;
   int sptr1, sptr2;
@@ -995,7 +995,7 @@ is_fusable(int lp, int lp1, int nested)
   int fuselp;
   int oldast, newast;
   int triple;
-  int idx[7];
+  int idx[MAXDIMS];
   int cnt;
   LOGICAL fuse_cnst_rhs;
 
@@ -2348,7 +2348,7 @@ eliminate_shift(int lp, int lp1, int rt_std, int rt1_std)
   int sptr, sptr1;
   int v, v1, cv, cv1, ns, ns1;
   int nmax, pmax;
-  int sub[7];
+  int sub[MAXDIMS];
   int new;
 
   if (XBIT(47, 0x100000))
@@ -2988,7 +2988,7 @@ opt_allocate(void)
   int i;
   int ndim;
   int stdnext;
-  int sub[MAXSUBS];
+  int sub[MAXDIMS];
   LITEMF *defs_to_propagate = clist();
   LITEMF *shape_exceptions = clist(); /* don't propagate into these shapes */
 
@@ -3608,7 +3608,7 @@ static void
 forall_make_same_idx(int std)
 {
 
-  int idx[7];
+  int idx[MAXDIMS];
   int list, list1, listp;
   int forall;
   int nidx;
@@ -3631,7 +3631,7 @@ forall_make_same_idx(int std)
     idx[nidx] = listp;
     nidx++;
   }
-  assert(nidx <= 7, "make_same_idx: illegal forall", 2, forall);
+  assert(nidx <= MAXDIMS, "make_same_idx: illegal forall", 2, forall);
 
   /* if it is already changed, don't do any thing */
   cnt = 0;

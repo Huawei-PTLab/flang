@@ -2986,9 +2986,9 @@ lldbg_emit_type(LL_DebugInfo *db, DTYPE dtype, SPTR sptr, int findex,
              db->module->ir.dwarf_version < LL_DWARF_Version_5) &&
             data_sptr && ASSUMRANKG(data_sptr)) {
           // Set dimension of array to maximum for DWARF version lower than5
-          numdim = 7;
+          numdim = MAXDIMS;
         }
-        if (numdim >= 1 && numdim <= 7) {
+        if (numdim >= 1 && numdim <= MAXDIMS) {
           // Generate dataLocation field DW_TAG_array_type for assumed shape
           // arrays, pointers and allocatables. For pointers and allocatables
           // generate allocated / associated.

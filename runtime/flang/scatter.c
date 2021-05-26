@@ -58,7 +58,7 @@ extern void local_scatter_WRAPPER();
 
 /* un-permuted axis map */
 
-static __INT_T id_map[MAXDIMS] = {1, 2, 3, 4, 5, 6, 7};
+static __INT_T id_map[MAXDIMS] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
 static void
 gathscat_abort(char *what, char *msg)

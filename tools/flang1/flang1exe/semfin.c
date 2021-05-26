@@ -2495,7 +2495,7 @@ nml_emit_desc(int sptr)
     } while (--ndims);
   } else if (ndims && ADJARRG(sptr)) {
     int dt = DTYPEG(sptr);
-    int subs[MAXRANK];
+    int subs[MAXDIMS];
     cnt = 0;
     if (SCG(sptr) != SC_DUMMY) {
       /*

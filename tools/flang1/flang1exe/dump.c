@@ -4310,7 +4310,7 @@ dumpdt(int dt)
       putbit("nobounds", ADD_NOBOUNDS(dt));
       putast("zbase", ADD_ZBASE(dt));
       putast("numelm", ADD_NUMELM(dt));
-      if (numdim < 1 || numdim > 7) {
+      if (numdim < 1 || numdim > MAXDIMS) {
         numdim = 0;
       }
       for (i = 0; i < numdim; ++i) {

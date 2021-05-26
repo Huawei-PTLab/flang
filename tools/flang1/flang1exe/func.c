@@ -193,7 +193,6 @@ is_no_comm_shift(int func_ast, int func_args)
 /*
  * generate inline loops for CSHIFT and EOSHIFT
  */
-#define SHIFTMAX 7
 /* shift structure */
 static struct {
   int shift;                    /* shift distance */
@@ -205,11 +204,11 @@ static struct {
   int nc, mc, kc;               /* constant value of above */
   LOGICAL lt;                   /* less than */
   LOGICAL then_part, else_part; /* nonzero shift, zero shift */
-} ss[SHIFTMAX];                 /* shift data */
+} ss[MAXDIMS];                 /* shift data */
 
 static struct {
   int shiftcount; /* how many nested shifts */
-  int subssrc[MAXSUBS], subsdest[MAXSUBS];
+  int subssrc[MAXDIMS], subsdest[MAXDIMS];
   int src, dest;
   int ndimsrc, ndimdest;
 } sg; /* shift global data */
@@ -683,7 +682,7 @@ inline_shifts(int func_ast, int func_args, int lhs)
   while (A_TYPEG(srcarray) == A_INTR) {
     if (A_OPTYPEG(srcarray) == I_CSHIFT) {
       /* cshift(array, shift, [dim]) */
-      assert(sg.shiftcount < SHIFTMAX, "inline_shifts: too many nested shifts",
+      assert(sg.shiftcount < MAXDIMS, "inline_shifts: too many nested shifts",
              func_ast, 3);
       srcarray = ARGT_ARG(args, 0);
       s = sg.shiftcount;
@@ -692,7 +691,7 @@ inline_shifts(int func_ast, int func_args, int lhs)
       ss[s].shifttype = I_CSHIFT;
     } else if (A_OPTYPEG(srcarray) == I_EOSHIFT) {
       /* eoshift(array, shift, [boundary, dim]); */
-      assert(sg.shiftcount < SHIFTMAX, "inline_shifts: too many nested shifts",
+      assert(sg.shiftcount < MAXDIMS, "inline_shifts: too many nested shifts",
              func_ast, 3);
       srcarray = ARGT_ARG(args, 0);
       s = sg.shiftcount;
@@ -735,7 +734,7 @@ inline_shifts(int func_ast, int func_args, int lhs)
   asdsrc = A_ASDG(sg.src);
   sg.ndimsrc = ASD_NDIM(asdsrc);
   for (s = 0; s < sg.shiftcount; ++s) {
-    if (ss[s].cdim > sg.ndimsrc || (ss[s].cdim < 1 || ss[s].cdim > 7)) {
+    if (ss[s].cdim > sg.ndimsrc || (ss[s].cdim < 1 || ss[s].cdim > MAXDIMS)) {
       error(504, 3, gbl.lineno, SYMNAME(sptrsrc), CNULL);
       ss[s].cdim = 1;
     }
@@ -985,7 +984,7 @@ convert_subscript(int a)
   int ndim;
   int lb, ub, st;
   int i;
-  int subs[MAXSUBS];
+  int subs[MAXDIMS];
   int asd;
 
   if (A_TYPEG(a) == A_ID) {
@@ -1701,14 +1700,14 @@ check_arg_isalloc(int arg)
   }
 }
 
-static int forall_indx[MAXSUBS];
+static int forall_indx[MAXDIMS];
 
 static LOGICAL
 id_dep_in_forall_idxlist(int ast)
 {
   int i;
 
-  for (i = 0; forall_indx[i] && i < MAXSUBS; i++) {
+  for (i = 0; forall_indx[i] && i < MAXDIMS; i++) {
     if (A_SPTRG(ast) == forall_indx[i]) {
       return TRUE;
     }
@@ -1733,11 +1732,11 @@ init_idx_list(int forall)
   int triplet_list;
   int i;
 
-  for (i = 0; i < MAXSUBS; i++)
+  for (i = 0; i < MAXDIMS; i++)
     forall_indx[i] = 0;
 
   triplet_list = A_LISTG(forall);
-  for (i = 0; i < MAXSUBS && triplet_list;
+  for (i = 0; i < MAXDIMS && triplet_list;
        i++, triplet_list = ASTLI_NEXT(triplet_list)) {
     forall_indx[i] = ASTLI_SPTR(triplet_list);
   }
@@ -1801,7 +1800,7 @@ rewrite_func_ast(int func_ast, int func_args, int lhs)
   FtnRtlEnum rtlRtn;
   char *root;
   int i;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int sptr;
   int astnew;
   int temp_sptr;
@@ -2938,7 +2937,7 @@ rewrite_intr_allocatable(int func_ast, int func_args, int lhs)
   } else {
     /* compute into a temp and copy that to lhs to handle allocatables */
     int new_rhs, assn_ast;
-    int subscr[MAXSUBS];
+    int subscr[MAXDIMS];
     int tmp_ast = 0;
     DTYPE dtype = A_DTYPEG(func_ast);
     int tmp_sptr = mk_result_sptr(func_ast, func_args, subscr, DTY(dtype + 1),
@@ -3072,7 +3071,7 @@ get_charintrin_temp(int arg, char *nm)
 
   /* get the temp and add the necessary statements */
   if (shape) {
-    int subscr[MAXSUBS];
+    int subscr[MAXDIMS];
     /* need to put this into a temp */
 
     temp = mk_shape_sptr(shape, subscr, dtype);
@@ -3360,7 +3359,7 @@ rewrite_sub_args(int arg_ast, int lc)
   int ast;
   int std;
   int arr;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int func_args;
   int retval;
   int dscptr;
@@ -3620,7 +3619,7 @@ rewrite_sub_ast(int ast, int lc)
   int asd;
   int numdim;
   int i;
-  int subs[MAXSUBS];
+  int subs[MAXDIMS];
 
   if (ast == 0)
     return 0;
@@ -3676,7 +3675,7 @@ rewrite_sub_ast(int ast, int lc)
     dtype = A_DTYPEG(ast);
     asd = A_ASDG(ast);
     numdim = ASD_NDIM(asd);
-    assert(numdim > 0 && numdim <= 7, "rewrite_sub_ast: bad numdim", ast, 4);
+    assert(numdim > 0 && numdim <= MAXDIMS, "rewrite_sub_ast: bad numdim", ast, 4);
     for (i = 0; i < numdim; ++i) {
       l = rewrite_sub_ast(ASD_SUBS(asd, i), lc);
       subs[i] = l;
@@ -5287,7 +5286,7 @@ static int
 build_array_reference(int ast, int si, int vi, int sj, int vj)
 {
   int asd, numdim, k, ss, iss;
-  int subs[MAXSUBS];
+  int subs[MAXDIMS];
   asd = A_ASDG(ast);
   numdim = ASD_NDIM(asd);
   iss = 0;
@@ -5460,7 +5459,7 @@ inline_small_matmul(int ast, int dest)
   int shape1, shape2;
   int stdnext, lineno;
   int i, j, k;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int mulop, addop;
   int stdprev;
   if (XBIT(47, 0x200))
@@ -5709,11 +5708,11 @@ inline_reduction_f90(int ast, int dest, int lc, LOGICAL *doremove)
   int operator, operand;
   int ifast, endif;
   int i1, i2, dovar;
-  int subs[MAXSUBS];
-  int loopidx[MAXSUBS];
-  int DOs[MAXSUBS];
+  int subs[MAXDIMS];
+  int loopidx[MAXDIMS];
+  int DOs[MAXDIMS];
   int curloop;
-  int tmpidx[MAXSUBS];
+  int tmpidx[MAXDIMS];
   int nbrloops;
   int dimdo;
   int destndim;
@@ -6659,7 +6658,7 @@ matmul(int func_ast, int func_args, int lhs)
   char *name;
   FtnRtlEnum rtlRtn;
   int i;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int argt;
   int std;
   int indx;
@@ -6902,7 +6901,7 @@ mmul(int func_ast, int func_args, int lhs)
   int retval;
   int ast;
   int nargs;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int sptr;
   FtnRtlEnum rtlRtn;
 
@@ -7087,7 +7086,7 @@ mmul_arg(int arr, int transpose, MMUL *mm)
     mm->addr = arr;
   } else if (mmul_array(arr)) {
     int asd;
-    int subscr[MAXSUBS];
+    int subscr[MAXDIMS];
     asd = A_ASDG(arr);
     rank = ASD_NDIM(asd);
     for (i = 0; i < rank; ++i) {
@@ -7222,7 +7221,7 @@ reshape(int func_ast, int func_args, int lhs)
   int nargs;
   FtnRtlEnum rtlRtn;
   int i;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int argt;
   int std;
   int sptr;
@@ -7317,7 +7316,7 @@ _reshape(int func_args, DTYPE dtype, int lhs)
   int arrelem;
   int subs, subs_dt, stride;
   int ast, ast2, asn;
-  int subscr[MAXSUBS];
+  int subscr[MAXDIMS];
   int resdt;
   int temp;
   int temp_p;
