@@ -39,7 +39,6 @@ init_sched_graph(int size, int srank)
 static void
 add_successor(INSTR_LIST *instr, INSTR_LIST *succ)
 {
-  int mat_idx;
   int i, j;
 
   /* avoid creating circular dependency */
@@ -101,7 +100,6 @@ static void
 build_idep_graph(INSTR_LIST *iroot, INSTR_LIST *cur_instr)
 {
   INSTR_LIST *instr;
-  int usecount = 0;
   int instcount;
   int ilix, c;
   bool first_load, has_pred;
@@ -282,8 +280,8 @@ build_block_idep_graph(INSTR_LIST *istart, bool *success)
 void
 sched_block_breadth_first(INSTR_LIST *istart, int level)
 {
-  int i, j, k, l;
-  INSTR_LIST *succ, *ssucc, *pred, *entry;
+  int i, j, k;
+  INSTR_LIST *succ, *pred, *entry;
 
   i = istart->rank - srank_dg;
 
@@ -370,8 +368,8 @@ sched_block_breadth_first(INSTR_LIST *istart, int level)
 void
 check_circular_dep(INSTR_LIST *istart)
 {
-  int i, j, k, l;
-  INSTR_LIST *succ, *ssucc;
+  int i, j;
+  INSTR_LIST *succ;
 
   i = istart->rank - srank_dg;
   if (istart->flags & INST_VISITED) {
