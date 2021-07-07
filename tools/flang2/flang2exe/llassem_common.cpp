@@ -68,10 +68,16 @@ static void put_ncharstring_n(char *, ISZ_T, int);
 static void put_zeroes(ISZ_T);
 static void put_cmplx_n(int, int);
 static void put_dcmplx_n(int, int);
+#ifdef TARGET_SUPPORTS_QUADFP
+static void put_qcmplx_n(int, int);
+#endif
 static void put_i8(int);
 static void put_i16(int);
 static void put_r4(INT);
 static void put_r8(int, int);
+#ifdef TARGET_SUPPORTS_QUADFP
+static void put_r16(int, int);
+#endif
 static void put_int(INT);
 static void put_int8(INT);
 static void put_float(INT);
@@ -427,6 +433,12 @@ emit_init(DTYPE tdtype, ISZ_T tconval, ISZ_T *addr, ISZ_T *repeat_cnt,
         if (tconval == stb.dbl0)
           goto do_zeroes;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QUAD:
+        if (tconval == stb.quad0)
+          goto do_zeroes;
+        break;
+#endif
       case TY_CMPLX:
         if (CONVAL1G(tconval) == 0 && CONVAL2G(tconval) == 0)
           goto do_zeroes;
@@ -435,6 +447,12 @@ emit_init(DTYPE tdtype, ISZ_T tconval, ISZ_T *addr, ISZ_T *repeat_cnt,
         if (CONVAL1G(tconval) == stb.dbl0 && CONVAL2G(tconval) == stb.dbl0)
           goto do_zeroes;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        if (CONVAL1G(tconval) == stb.quad0 && CONVAL2G(tconval) == stb.quad0)
+          goto do_zeroes;
+        break;
+#endif
 #ifdef LONG_DOUBLE_FLOAT128
       case TY_FLOAT128:
         if (tconval == stb.float128_0)
@@ -546,6 +564,17 @@ emit_init(DTYPE tdtype, ISZ_T tconval, ISZ_T *addr, ISZ_T *repeat_cnt,
         put_r8((int)tconval, putval);
         break;
 
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QUAD:
+        if (DBGBIT(5, 32)) {
+          fprintf(gbl.dbgfil,
+                  "emit_init:put_r18 first_data:%d i8cnt:%ld ptrcnt:%d\n",
+                  first_data, *i8cnt, *ptrcnt);
+        }
+        put_r16((int)tconval, putval);
+        break;
+#endif
+
       case TY_CMPLX:
         if (DBGBIT(5, 32)) {
           fprintf(gbl.dbgfil,
@@ -563,6 +592,17 @@ emit_init(DTYPE tdtype, ISZ_T tconval, ISZ_T *addr, ISZ_T *repeat_cnt,
         }
         put_dcmplx_n((int)tconval, putval);
         break;
+
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        if (DBGBIT(5, 32)) {
+          fprintf(gbl.dbgfil,
+                  "emit_init:put_qcmplx_n first_data:%d i8cnt:%ld ptrcnt:%d\n",
+                  first_data, *i8cnt, *ptrcnt);
+        }
+        put_qcmplx_n((int)tconval, putval);
+        break;
+#endif
 
       case TY_PTR:
         if (*i8cnt) {
@@ -915,6 +955,35 @@ put_r8(int sptr, int putval)
   }
 }
 
+#ifdef TARGET_SUPPORTS_QUADFP
+static void put_r16(int sptr, int putval)
+{
+  INT num[4];
+
+  num[0] = CONVAL1G(sptr);
+  num[1] = CONVAL2G(sptr);
+  num[2] = CONVAL3G(sptr);
+  num[3] = CONVAL4G(sptr);
+  if (flg.endian) {
+    put_r4(num[0]);
+    fprintf(ASMFIL, ",");
+    put_r4(num[1]);
+    fprintf(ASMFIL, ",");
+    put_r4(num[2]);
+    fprintf(ASMFIL, ",");
+    put_r4(num[3]);
+  } else {
+    put_r4(num[3]);
+    fprintf(ASMFIL, ",");
+    put_r4(num[2]);
+    fprintf(ASMFIL, ",");
+    put_r4(num[1]);
+    fprintf(ASMFIL, ",");
+    put_r4(num[0]);
+  }
+}
+#endif
+
 static void
 put_cmplx_n(int sptr, int putval)
 {
@@ -950,6 +1019,15 @@ put_dcmplx_n(int sptr, int putval)
   fprintf(ASMFIL, ",");
   put_r8((int)CONVAL2G(sptr), putval);
 }
+
+#ifdef TARGET_SUPPORTS_QUADFP
+static void put_qcmplx_n(int sptr, int putval)
+{
+  put_r16((int)CONVAL1G(sptr), putval);
+  fprintf(ASMFIL, ",");
+  put_r16((int)CONVAL2G(sptr), putval);
+}
+#endif
 
 /**
    \brief Generate an expression to add an offset to a ptr

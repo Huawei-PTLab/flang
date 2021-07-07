@@ -3700,6 +3700,9 @@ map_I_to_AC(int intrin)
   case I_KMIN1:
   case I_AJMIN0:
   case I_MIN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMIN:
+#endif
     return AC_I_min;
   case I_IMAX0:
   case I_MAX0:
@@ -3715,8 +3718,14 @@ map_I_to_AC(int intrin)
   case I_KMAX1:
   case I_AJMAX0:
   case I_MAX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMAX:
+#endif
     return AC_I_max;
   case I_ABS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QABS:
+#endif
     return AC_I_abs;
   case I_DBLE:
   case I_DFLOAT:
@@ -3729,13 +3738,22 @@ map_I_to_AC(int intrin)
     return AC_I_mod;
   case I_SQRT:
   case I_DSQRT:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSQRT:
+#endif
     return AC_I_sqrt;
   case I_EXP:
   case I_DEXP:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QEXP:
+#endif
     return AC_I_exp;
   case I_LOG:
   case I_ALOG:
   case I_DLOG:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QLOG:
+#endif
     return AC_I_log;
   case I_LOG10:
   case I_ALOG10:
@@ -3743,24 +3761,45 @@ map_I_to_AC(int intrin)
     return AC_I_log10;
   case I_SIN:
   case I_DSIN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSIN:
+#endif
     return AC_I_sin;
   case I_COS:
   case I_DCOS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCOS:
+#endif
     return AC_I_cos;
   case I_TAN:
   case I_DTAN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QTAN:
+#endif
     return AC_I_tan;
   case I_ASIN:
   case I_DASIN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QASIN:
+#endif
     return AC_I_asin;
   case I_ACOS:
   case I_DACOS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QACOS:
+#endif
     return AC_I_acos;
   case I_ATAN:
   case I_DATAN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN:
+#endif
     return AC_I_atan;
   case I_ATAN2:
   case I_DATAN2:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN2:
+#endif
     return AC_I_atan2;
   case I_IAND:
     return AC_I_iand;
@@ -4005,8 +4044,10 @@ get_ast_op(int op)
     break;
   case AC_EXP:
   case AC_EXPK:
-  case AC_EXPX:
     ast_op = OP_XTOI;
+    break;
+  case AC_EXPX:
+    ast_op = OP_XTOX;
     break;
   default:
     interr("get_ast_op: unexpected operator in initialization expr", op, 3);
@@ -4078,6 +4119,12 @@ get_ac_op(int ast)
       break;
     case DT_REAL4:
     case DT_REAL8:
+#ifdef TARGET_SUPPORTS_QUADFP
+    case DT_QUAD:
+    case DT_CMPLX8:
+    case DT_CMPLX16:
+    case DT_QCMPLX:
+#endif
       ac_op = AC_EXPX;
       break;
     default:
@@ -8415,6 +8462,14 @@ eval_abs(ACL *arg, DTYPE dtype)
       xdabsv(num1, res);
       con1 = getcon(res, dtype);
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      con1 = wrkarg->conval;
+      GET_QUAD(num1, con1);
+      xqabsv(num1, res);
+      con1 = getcon(res, dtype);
+      break;
+#endif
     case TY_CMPLX:
       con1 = wrkarg->conval;
       f1 = CONVAL1G(con1);
@@ -8450,7 +8505,9 @@ eval_scale(ACL *arg, DTYPE dtype)
   INT i, conval1, conval2, conval;
   DBLINT64 inum1, inum2;
   INT e;
+  INT qnum1[4], qnum2[4];
   DBLE dconval;
+  QUAD qconval;
 
   rslt = arg = eval_init_expr(arg);
   conval1 = arg->conval;
@@ -8493,6 +8550,29 @@ eval_scale(ACL *arg, DTYPE dtype)
     xdmul(inum1, inum2, dconval);
     rslt->conval = getcon(dconval, DT_REAL8);
     break;
+
+#ifdef TARGET_SUPPORTS_QUADFP
+  case 16:
+    e = 16383 + i;
+    if (e < 0)
+      e = 0;
+    else if (e > 32767)
+      e = 32767;
+
+    qnum1[0] = CONVAL1G(conval1);
+    qnum1[1] = CONVAL2G(conval1);
+    qnum1[2] = CONVAL3G(conval1);
+    qnum1[3] = CONVAL4G(conval1);
+
+    qnum2[0] = e << 16;
+    qnum2[1] = 0;
+    qnum2[2] = 0;
+    qnum2[3] = 0;
+    xqmul(qnum1, qnum2, qconval);
+    rslt->conval = getcon(qconval, DT_QUAD);
+    break;
+#endif
+
   }
 
   return rslt;
@@ -8552,6 +8632,9 @@ cmp_acl(DTYPE dtype, ACL *x, ACL *y, bool want_max, bool back)
     break;
   case TY_INT8:
   case TY_DBLE:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+#endif
     cmp = const_fold(OP_CMP, x->conval, y->conval, dtype);
     break;
   default:
@@ -8990,6 +9073,28 @@ eval_nint(ACL *arg, DTYPE dtype)
           res[0] = const_fold(OP_SUB, con1, stb.dbl0, DT_REAL8);
       }
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      con1 = wrkarg->conval;
+      if (const_fold(OP_CMP, con1, stb.quad0, DT_QUAD) >= 0) {
+        INT qv2_112[4] = {MAX_MANTI_BIT0_31, MAX_MANTI_BIT32_63, MAX_MANTI_BIT64_95, MAX_MANTI_BIT96_127};
+        INT q2_112;
+        q2_112 = getcon(qv2_112, DT_QUAD);
+        if (const_fold(OP_CMP, con1, q2_112, DT_QUAD) >= 0)
+          res[0] = const_fold(OP_ADD, con1, stb.quad0, DT_QUAD);
+        else
+          res[0] = const_fold(OP_ADD, con1, stb.quadhalf, DT_QUAD);
+      } else {
+        INT qvm2_112[4] = {MMAX_MANTI_BIT0_31, MMAX_MANTI_BIT32_63, MMAX_MANTI_BIT64_95, MMAX_MANTI_BIT96_127};
+        INT qm2_112;
+        qm2_112 = getcon(qvm2_112, DT_QUAD);
+        if (const_fold(OP_CMP, con1, qm2_112, DT_QUAD) <= 0)
+          res[0] = const_fold(OP_SUB, con1, stb.quadhalf, DT_QUAD);
+        else
+          res[0] = const_fold(OP_SUB, con1, stb.quad0, DT_QUAD);
+      }
+      break;
+#endif
     }
     conval = cngcon(res[0], dtype1, dtype);
     wrkarg->dtype = dtype;
@@ -9032,6 +9137,16 @@ eval_floor(ACL *arg, DTYPE dtype)
           adjust = 1;
       }
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      conval = cngcon(con1, DT_QUAD, dtype);
+      if (const_fold(OP_CMP, con1, stb.quad0, DT_QUAD) < 0) {
+        con1 = cngcon(conval, dtype, DT_QUAD);
+        if (const_fold(OP_CMP, con1, wrkarg->conval, DT_QUAD) != 0)
+          adjust = 1;
+      }
+      break;
+#endif
     }
     if (adjust) {
       if (DT_ISWORD(dtype))
@@ -9083,6 +9198,16 @@ eval_ceiling(ACL *arg, DTYPE dtype)
           adjust = 1;
       }
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      conval = cngcon(con1, DT_QUAD, dtype);
+      if (const_fold(OP_CMP, con1, stb.quad0, DT_QUAD) > 0) {
+        con1 = cngcon(conval, dtype, DT_QUAD);
+        if (const_fold(OP_CMP, con1, wrkarg->conval, DT_QUAD) != 0)
+          adjust = 1;
+      }
+      break;
+#endif
     }
     if (adjust) {
       if (DT_ISWORD(dtype))
@@ -9186,6 +9311,15 @@ transfer_store(INT conval, DTYPE dtype, char *destination)
     dest[1] = CONVAL1G(conval);
     break;
 
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    dest[0] = CONVAL4G(conval);
+    dest[1] = CONVAL3G(conval);
+    dest[2] = CONVAL2G(conval);
+    dest[3] = CONVAL1G(conval);
+    break;
+#endif
+
   case TY_CMPLX:
     dest[0] = CONVAL1G(conval);
     dest[1] = CONVAL2G(conval);
@@ -9214,7 +9348,7 @@ static INT
 transfer_load(DTYPE dtype, char *source)
 {
   int *src = (int *)source;
-  INT num[2], real[2], imag[2];
+  INT num[4], real[2], imag[2];
 
   if (DT_ISWORD(dtype))
     return src[0];
@@ -9227,6 +9361,15 @@ transfer_load(DTYPE dtype, char *source)
     num[1] = src[0];
     num[0] = src[1];
     break;
+
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    num[3] = src[0];
+    num[2] = src[1];
+    num[1] = src[2];
+    num[0] = src[3];
+    break;
+#endif
 
   case TY_CMPLX:
     num[0] = src[0];
@@ -9389,11 +9532,15 @@ eval_selected_real_kind(ACL *arg)
     r = 4;
   else if (con <= 15)
     r = 8;
+#ifdef TARGET_SUPPORTS_QUADFP
+  else if (con <= MAX_EXP_OF_QMANTISSA)
+    r = REAL_16;
+#endif
   else
     r = -1;
 
   if (arg->next) {
-    wrkarg = arg->next;
+    wrkarg = arg = arg->next;
     con = get_int_from_init_conval(wrkarg);
     if (con <= 37) {
       if (r > 0 && r < 4)
@@ -9401,10 +9548,26 @@ eval_selected_real_kind(ACL *arg)
     } else if (con <= 307) {
       if (r > 0 && r < 8)
         r = 8;
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if (con <= MAX_EXP_QVALUE) {
+      if (r > REAL_0 && r < REAL_16)
+        r = REAL_16;
+#endif
     } else {
       if (r > 0)
         r = 0;
       r -= 2;
+    }
+  }
+
+  if (arg->next) {
+    wrkarg = arg->next;
+    con = get_int_from_init_conval(wrkarg);
+    if (con != RADIX2) {
+       if (con == NOT_GET_VAL && !ARG_STK(KEYWD_ARGS2)) {}
+       else {
+        r = NO_REAL;
+       }
     }
   }
 
@@ -10113,6 +10276,16 @@ eval_sqrt(ACL *arg, DTYPE dtype)
       xdsqrt(num1, res);
       conval = getcon(res, DT_DBLE);
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      num1[0] = CONVAL1G(con1);
+      num1[1] = CONVAL2G(con1);
+      num1[2] = CONVAL3G(con1);
+      num1[3] = CONVAL4G(con1);
+      xqsqrt(num1, res);
+      conval = getcon(res, DT_QUAD);
+      break;
+#endif
     case TY_CMPLX:
     case TY_DCMPLX:
       /*
@@ -10152,7 +10325,59 @@ eval_sqrt(ACL *arg, DTYPE dtype)
 
 /*---------------------------------------------------------------------*/
 
-#define FPINTRIN1(iname, ent, fscutil, dscutil)                     \
+#ifdef TARGET_SUPPORTS_QUADFP
+#define FPINTRIN1(iname, ent, fscutil, dscutil, qscutil)            \
+  static ACL *ent(ACL *arg, DTYPE dtype)                            \
+  {                                                                 \
+    ACL *rslt;                                                      \
+    ACL *wrkarg;                                                    \
+    INT conval;                                                     \
+    rslt = arg = eval_init_expr(arg);                               \
+    wrkarg = (rslt->id == AC_ACONST ? rslt->subc : rslt);           \
+    for (; wrkarg; wrkarg = wrkarg->next) {                         \
+      INT num1[4];                                                  \
+      INT res[4];                                                   \
+      INT con1;                                                     \
+      con1 = wrkarg->conval;                                        \
+      switch (DTY(wrkarg->dtype)) {                                 \
+      case TY_REAL:                                                 \
+        fscutil(con1, &res[0]);                                     \
+        conval = res[0];                                            \
+        break;                                                      \
+      case TY_DBLE:                                                 \
+        num1[0] = CONVAL1G(con1);                                   \
+        num1[1] = CONVAL2G(con1);                                   \
+        dscutil(num1, res);                                         \
+        conval = getcon(res, DT_DBLE);                              \
+        break;                                                      \
+      case TY_QUAD:                                                 \
+        num1[0] = CONVAL1G(con1);                                   \
+        num1[1] = CONVAL2G(con1);                                   \
+        num1[2] = CONVAL3G(con1);                                   \
+        num1[3] = CONVAL4G(con1);                                   \
+        qscutil(num1, res);                                         \
+        conval = getcon(res, DT_QUAD);                              \
+        break;                                                      \
+      case TY_CMPLX:                                                \
+      case TY_DCMPLX:                                               \
+        error(155, 3, gbl.lineno,                                   \
+              "Intrinsic not supported in initialization:", iname); \
+        break;                                                      \
+      case TY_HALF:                                                 \
+        /* fallthrough to error */                                  \
+      default:                                                      \
+        error(155, 3, gbl.lineno,                                   \
+              "Intrinsic not supported in initialization:", iname); \
+        break;                                                      \
+      }                                                             \
+      conval = cngcon(conval, wrkarg->dtype, dtype);                \
+      wrkarg->conval = conval;                                      \
+      wrkarg->dtype = dtype;                                        \
+    }                                                               \
+    return rslt;                                                    \
+  }
+#else
+#define FPINTRIN1(iname, ent, fscutil, dscutil, qscutil)            \
   static ACL *ent(ACL *arg, DTYPE dtype)                            \
   {                                                                 \
     ACL *rslt;                                                      \
@@ -10194,26 +10419,89 @@ eval_sqrt(ACL *arg, DTYPE dtype)
     }                                                               \
     return rslt;                                                    \
   }
+#endif
 
-FPINTRIN1("exp", eval_exp, xfexp, xdexp)
+FPINTRIN1("exp", eval_exp, xfexp, xdexp, xqexp)
 
-FPINTRIN1("log", eval_log, xflog, xdlog)
+FPINTRIN1("log", eval_log, xflog, xdlog, xqlog)
 
-FPINTRIN1("log10", eval_log10, xflog10, xdlog10)
+FPINTRIN1("log10", eval_log10, xflog10, xdlog10, xqlog10)
 
-FPINTRIN1("sin", eval_sin, xfsin, xdsin)
+FPINTRIN1("sin", eval_sin, xfsin, xdsin, xqsin)
 
-FPINTRIN1("cos", eval_cos, xfcos, xdcos)
+FPINTRIN1("cos", eval_cos, xfcos, xdcos, xqcos)
 
-FPINTRIN1("tan", eval_tan, xftan, xdtan)
+FPINTRIN1("tan", eval_tan, xftan, xdtan, xqtan)
 
-FPINTRIN1("asin", eval_asin, xfasin, xdasin)
+FPINTRIN1("asin", eval_asin, xfasin, xdasin, xqasin)
 
-FPINTRIN1("acos", eval_acos, xfacos, xdacos)
+FPINTRIN1("acos", eval_acos, xfacos, xdacos, xqacos)
 
-FPINTRIN1("atan", eval_atan, xfatan, xdatan)
+FPINTRIN1("atan", eval_atan, xfatan, xdatan, xqatan)
 
-#define FPINTRIN2(iname, ent, fscutil, dscutil)                     \
+#ifdef TARGET_SUPPORTS_QUADFP
+#define FPINTRIN2(iname, ent, fscutil, dscutil, qscutil)            \
+  static ACL *ent(ACL *arg, DTYPE dtype)                            \
+  {                                                                 \
+    ACL *rslt = arg;                                                \
+    ACL *arg1, *arg2;                                               \
+    INT conval;                                                     \
+    arg1 = eval_init_expr_item(arg);                                \
+    arg2 = eval_init_expr_item(arg->next);                          \
+    rslt = clone_init_const(arg1, TRUE);                            \
+    arg1 = (rslt->id == AC_ACONST ? rslt->subc : rslt);             \
+    arg2 = (arg2->id == AC_ACONST ? arg2->subc : arg2);             \
+    for (; arg1; arg1 = arg1->next, arg2 = arg2->next) {            \
+      INT num1[4], num2[4];                                         \
+      INT res[4];                                                   \
+      INT con1, con2;                                               \
+      con1 = arg1->conval;                                          \
+      con2 = arg2->conval;                                          \
+      switch (DTY(arg1->dtype)) {                                   \
+      case TY_REAL:                                                 \
+        fscutil(con1, con2, &res[0]);                               \
+        conval = res[0];                                            \
+        break;                                                      \
+      case TY_DBLE:                                                 \
+        num1[0] = CONVAL1G(con1);                                   \
+        num1[1] = CONVAL2G(con1);                                   \
+        num2[0] = CONVAL1G(con2);                                   \
+        num2[1] = CONVAL2G(con2);                                   \
+        dscutil(num1, num2, res);                                   \
+        conval = getcon(res, DT_DBLE);                              \
+        break;                                                      \
+      case TY_QUAD:                                                 \
+        num1[0] = CONVAL1G(con1);                                   \
+        num1[1] = CONVAL2G(con1);                                   \
+        num1[2] = CONVAL3G(con1);                                   \
+        num1[3] = CONVAL4G(con1);                                   \
+        num2[0] = CONVAL1G(con2);                                   \
+        num2[1] = CONVAL2G(con2);                                   \
+        num2[2] = CONVAL3G(con2);                                   \
+        num2[3] = CONVAL4G(con2);                                   \
+        qscutil(num1, num2, res);                                   \
+        conval = getcon(res, DT_QUAD);                              \
+        break;                                                      \
+      case TY_CMPLX:                                                \
+      case TY_DCMPLX:                                               \
+        error(155, 3, gbl.lineno,                                   \
+              "Intrinsic not supported in initialization:", iname); \
+        break;                                                      \
+      case TY_HALF:                                                 \
+        /* fallthrough to error */                                  \
+      default:                                                      \
+        error(155, 3, gbl.lineno,                                   \
+              "Intrinsic not supported in initialization:", iname); \
+        break;                                                      \
+      }                                                             \
+      conval = cngcon(conval, arg1->dtype, dtype);                  \
+      arg1->conval = conval;                                        \
+      arg1->dtype = dtype;                                          \
+    }                                                               \
+    return rslt;                                                    \
+  }
+#else
+#define FPINTRIN2(iname, ent, fscutil, dscutil, qscutil)            \
   static ACL *ent(ACL *arg, DTYPE dtype)                            \
   {                                                                 \
     ACL *rslt = arg;                                                \
@@ -10261,8 +10549,9 @@ FPINTRIN1("atan", eval_atan, xfatan, xdatan)
     }                                                               \
     return rslt;                                                    \
   }
+#endif
 
-FPINTRIN2("atan2", eval_atan2, xfatan2, xdatan2)
+FPINTRIN2("atan2", eval_atan2, xfatan2, xdatan2, xqatan2)
 
 static INT
 get_const_from_ast(int ast)
@@ -11050,7 +11339,7 @@ eval_init_op(int op, ACL *lop, DTYPE ldtype, ACL *rop, DTYPE rdtype, SPTR sptr,
       if (rop->dtype != dt) {
         r_conval = cngcon(r_conval, rop->dtype, dt);
       }
-      root->conval = const_fold(get_ast_op(op), l_conval, r_conval, dt);
+      root->conval = const_fold(op, l_conval, r_conval, dt);
       break;
     }
   }

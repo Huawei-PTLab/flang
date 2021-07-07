@@ -1953,6 +1953,12 @@ collapse_assignment(int asn, int std)
       if (CONVAL1G(cnst) == stb.dbl0 && CONVAL2G(cnst) == stb.dbl0)
         is_zero = 1;
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case DT_QCMPLX:
+      if (CONVAL1G(cnst) == stb.quad0 && CONVAL2G(cnst) == stb.quad0)
+        is_zero = 1;
+      break;
+#endif
     case DT_BINT:
     case DT_SINT:
     case DT_INT4:
@@ -1968,7 +1974,11 @@ collapse_assignment(int asn, int std)
       break;
     default:
       if (cnst == stb.i0 || cnst == stb.k0 || cnst == stb.flt0 ||
-          cnst == stb.dbl0)
+          cnst == stb.dbl0
+#ifdef TARGET_SUPPORTS_QUADFP
+          || cnst == stb.quad0
+#endif
+         )
         is_zero = 1;
       break;
     }
@@ -2022,6 +2032,11 @@ collapse_assignment(int asn, int std)
       case 16:
         rtlRtn = RTE_mzeroz16;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case 32:
+        rtlRtn = RTE_mzeroz32;
+        break;
+#endif
       }
     } else {
       switch (size_of(dtype)) {
@@ -2037,6 +2052,11 @@ collapse_assignment(int asn, int std)
       case 8:
         rtlRtn = RTE_mzero8;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case 16:
+        rtlRtn = RTE_mzero16;
+        break;
+#endif
       }
     }
     nm = mkRteRtnNm(rtlRtn);
@@ -2057,6 +2077,11 @@ collapse_assignment(int asn, int std)
       case 16:
         rtlRtn = RTE_mcopyz16;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case 32:
+        rtlRtn = RTE_mcopyz32;
+        break;
+#endif
       }
     } else {
       switch (size_of(dtype)) {
@@ -2072,6 +2097,11 @@ collapse_assignment(int asn, int std)
       case 8:
         rtlRtn = RTE_mcopy8;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case 16:
+        rtlRtn = RTE_mcopy16;
+        break;
+#endif
       }
     }
     nm = mkRteRtnNm(rtlRtn);
@@ -2093,6 +2123,11 @@ collapse_assignment(int asn, int std)
       case 16:
         rtlRtn = RTE_msetz16;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case 32:
+        rtlRtn = RTE_msetz32;
+        break;
+#endif
       }
     } else {
       switch (size_of(dtype)) {
@@ -2108,6 +2143,11 @@ collapse_assignment(int asn, int std)
       case 8:
         rtlRtn = RTE_mset8;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case 16:
+        rtlRtn = RTE_mset16;
+        break;
+#endif
       }
     }
     nm = mkRteRtnNm(rtlRtn);

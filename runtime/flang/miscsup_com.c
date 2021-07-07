@@ -24,6 +24,7 @@
 #include "llcrit.h"
 #include "global.h"
 #include "memops.h"
+#include "math.h"
 
 MP_SEMAPHORE(static, sem);
 #include "type.h"
@@ -562,6 +563,23 @@ ENTFTN(CPU_TIMED, cpu_timed)(__REAL8_T *x)
   /* probably not necessary for this version, except that
      user could mix real*4 and real*8 versions.
    */
+  if (secs > TIME_THRESHOLD2)
+    res = secs - TIME_THRESHOLD2;
+  else if (secs > TIME_THRESHOLD1)
+    res = secs - TIME_THRESHOLD1;
+  else
+    res = secs;
+  *x = res;
+}
+
+void
+ENTFTN(CPU_TIMEQ, cpu_timeq)(__REAL16_T *x)
+{
+  extern double __fort_second();
+  long double secs;
+  __REAL16_T res;
+
+  secs = (long double)__fort_second();
   if (secs > TIME_THRESHOLD2)
     res = secs - TIME_THRESHOLD2;
   else if (secs > TIME_THRESHOLD1)
@@ -3958,6 +3976,16 @@ ENTF90(DMODULO, dmodulo)(__DBLE_T *x, __DBLE_T *y)
   return d;
 }
 
+__QUAD_T
+ENTF90(QMODULO, qmodulo)(__QUAD_T *x, __QUAD_T *y)
+{
+  __QUAD_T q;
+  q = (__QUAD_T)fmodl(*x, *y);
+  if (q != 0 && ((*x < 0 && *y > 0) || (*x > 0 && *y < 0)))
+    q += *y;
+  return q;
+}
+
 __INT4_T
 ENTF90(MODULOv, modulov)(__INT4_T a, __INT4_T p)
 {
@@ -4015,6 +4043,15 @@ ENTF90(DMODULOv, dmodulov)(__DBLE_T x, __DBLE_T y)
   if (d != 0 && ((x < 0 && y > 0) || (x > 0 && y < 0)))
     d += y;
   return d;
+}
+
+__QUAD_T
+ENTF90(QMODULOv, qmodulov)(__QUAD_T x, __QUAD_T y)
+{
+  __QUAD_T q = (__QUAD_T)fmodl(x, y);
+  if (q != 0 && ((x < 0 && y > 0) || (x > 0 && y < 0)))
+    q += y;
+  return q;
 }
 
 __INT_T
@@ -4351,12 +4388,11 @@ ENTF90(KSEL_CHAR_KIND, ksel_char_kind)
 
 /* IEEE floating point - 4 byte reals, 8 byte double precision */
 
-/** \brief selected_real_kind(p,r) */
+/** \brief selected_real_kind(p,r,radix),add radix argument for f2008 */
 __INT8_T
 ENTF90(KSEL_REAL_KIND, ksel_real_kind)
-(char *pb, char *rb, F90_Desc *pd, F90_Desc *rd)
+(char *pb, char *rb, char *radixb, F90_Desc *pd, F90_Desc *rd, F90_Desc *radixd)
 {
-
   /* 
    * -i8 variant of SEL_REAL_KIND
    */
@@ -4371,6 +4407,10 @@ ENTF90(KSEL_REAL_KIND, ksel_real_kind)
       k = 4;
     else if (p <= 15)
       k = 8;
+#ifdef TARGET_SUPPORTS_QUADFP
+    else if (p <= 33)
+      k = 16;
+#endif
     else
       e -= 1;
   }
@@ -4384,17 +4424,32 @@ ENTF90(KSEL_REAL_KIND, ksel_real_kind)
       if (k < 8)
         k = 8;
     }
+#ifdef TARGET_SUPPORTS_QUADFP
+    else if (r <= 4931) {
+      if (k < 16)
+        k = 16;
+    }
+#endif
     else
       e -= 2;
   }
+#ifdef TARGET_SUPPORTS_QUADFP
+  if (ISPRESENT(radixb)) {
+    int radix = I8(__fort_fetch_int)(radixb, radixd);
+    if (radix != 2)
+      e = -5;
+    else
+      k = k ? k : 4;
+  }
+#endif
   return (__INT8_T)e ? e : k;
 }
 
 __INT_T
 ENTF90(SEL_REAL_KIND, sel_real_kind)
-(char *pb, char *rb, F90_Desc *pd, F90_Desc *rd)
+(char *pb, char *rb, char *radixb, F90_Desc *pd, F90_Desc *rd, F90_Desc *radixd)
 {
-  int p, r, e, k;
+  int p, r, radix, e, k;
 
   e = 0;
   k = 0;
@@ -4404,6 +4459,8 @@ ENTF90(SEL_REAL_KIND, sel_real_kind)
       k = 4;
     else if (p <= 15)
       k = 8;
+    else if (p <= 33)
+      k = 16;
     else
       e -= 1;
   }
@@ -4417,9 +4474,20 @@ ENTF90(SEL_REAL_KIND, sel_real_kind)
       if (k < 8)
         k = 8;
     }
+    else if (r <= 4931) {
+      if (k < 16)
+        k = 16;
+    }
 
     else
       e -= 2;
+  }
+  if (ISPRESENT(radixb)) {
+    radix = I8(__fort_fetch_int)(radixb, radixd);
+    if (radix != 2)
+      e = -5;
+    else
+      k = k ? k : 4;
   }
   return e ? e : k;
 }
@@ -4462,6 +4530,24 @@ __INT_T
 ENTF90(EXPOND, expond)(__REAL8_T *d)
 {
   return ENTF90(EXPONDX, expondx)(*d);
+}
+
+__INT_T
+ENTF90(EXPONQX, exponqx)(__REAL16_T q)
+{
+  __REAL16_SPLIT g;
+  g.q = q;
+  if (((g.i.h & 0x7fffffff) | (g.i.j & 0xffffffff) |
+       (g.i.k & 0xffffffff) | (g.i.l & 0xffffffff)) == 0)
+    return 0;
+  else
+    return ((g.ll.h >> 48) & 0x7FFF) - 16382;
+}
+
+__INT_T
+ENTF90(EXPONQ, exponq)(const __REAL16_T *q)
+{
+   return ENTF90(EXPONQX, exponqx)(*q);
 }
 
 __INT8_T
@@ -4522,6 +4608,25 @@ ENTF90(FRACDX, fracdx)(__REAL8_T d)
 __REAL8_T
 ENTF90(FRACD, fracd)(__REAL8_T *d) { return ENTF90(FRACDX, fracdx)(*d); }
 
+__REAL16_T
+ENTF90(FRACQX, fracqx)(__REAL16_T q)
+{
+  __REAL16_SPLIT x;
+
+  x.q = q;
+  if (x.q != 0.0) {
+    x.i.h &= ~0x7FFF0000;
+    x.i.h |= 0x3FFE0000;
+  }
+  return x.q;
+}
+
+__REAL16_T
+ENTF90(FRACQ, fracq)(__REAL16_T *q)
+{ 
+  return ENTF90(FRACQX, fracqx)(*q); 
+}
+
 /** \brief NEAREST(X,S) has a value equal to the machine representable number
  * distinct from X and nearest to it in the direction of the infinity
  * with the same sign as S.
@@ -4580,6 +4685,44 @@ ENTF90(NEARESTD, nearestd)(__REAL8_T *d, __LOG_T *sign)
   return ENTF90(NEARESTDX, nearestdx)(*d, *sign);
 }
 
+__REAL16_T
+ENTF90(NEARESTQX, nearestqx)(__REAL16_T q, __LOG_T sign)
+{
+  __REAL16_SPLIT x;
+
+  x.q = q;
+  if (x.q == 0.0) {
+    x.i.h = (sign & 1) ? 0x00000000 : 0x80000000;
+    x.i.j = x.i.k = 0;
+    x.i.l = 0x00000001;
+  } else {
+    if ((x.ll.h >> 48 & 0x7FFF) != 0x7FFF) { /* not nan or inf */
+      if ((int)(x.q < 0.0) ^ (int)(sign & GET_DIST_MASK_LOG)) {
+        if ((x.ll.l + 1) < x.ll.l) {
+          ++x.ll.h;
+          x.ll.l = 0;
+        } else {
+          ++x.ll.l;
+        }
+      } else {
+        if (x.ll.l == 0) {
+          --x.ll.h;
+          --x.ll.l;
+        } else {
+          --x.ll.l;
+        }
+      }
+    }
+  }
+  return x.q;
+}
+
+__REAL16_T
+ENTF90(NEARESTQ, nearestq)(const __REAL16_T *q, const __LOG_T *sign)
+{
+  return ENTF90(NEARESTQX, nearestqx)(*q, *sign);
+}
+
 __REAL4_T
 ENTF90(RRSPACINGX, rrspacingx)(__REAL4_T f)
 {
@@ -4629,6 +4772,35 @@ __REAL8_T
 ENTF90(RRSPACINGD, rrspacingd)(__REAL8_T *d)
 {
   return ENTF90(RRSPACINGDX, rrspacingdx)(*d);
+}
+
+__REAL16_T
+ENTF90(RRSPACINGQX, rrspacingqx)(__REAL16_T q)
+{
+  __REAL16_SPLIT x, y;
+  
+  x.q = q;
+  if (x.q == 0)
+    return 0;
+  y.i.h = (x.i.h & 0x7FFF << 16) ^ 0x7FFF << 16;
+  y.i.j = 0;
+  y.i.k = 0;
+  y.i.l = 0;
+  x.q *= y.q;
+  if (x.q < 0)
+    x.q = -x.q;
+  y.i.h = (111 + 16383) << 16;
+  y.i.k = 0;
+  y.i.l = 0;
+  y.i.l = 0;
+  x.q *= y.q;
+  return x.q;
+}
+
+__REAL16_T
+ENTF90(RRSPACINGQ, rrspacingq)(__REAL16_T *q)
+{
+  return ENTF90(RRSPACINGQX, rrspacingqx)(*q);
 }
 
 __REAL4_T
@@ -4699,6 +4871,42 @@ ENTF90(SCALED, scaled)(__REAL8_T *d, void *i, __INT_T *size)
   return *d * x.d;
 }
 
+__REAL16_T
+ENTF90(SCALEQX, scaleqx)(__REAL16_T q, __INT_T i)
+{
+  int e;
+  __REAL16_SPLIT x;
+
+  e = 16383 + i;
+  if (e < 0)
+    e = 0;
+  else if (e > 32767)
+    e = 32767;
+  x.i.h = e << 16;
+  x.i.j = 0;
+  x.i.k = 0;
+  x.i.l = 0;
+  return q * x.q;
+}
+
+__REAL16_T
+ENTF90(SCALEQ, scaleq)(__REAL16_T *q, void *i, __INT_T *size)
+{
+  int e;
+  __REAL16_SPLIT x;
+
+  e = 16383 + I8(__fort_varying_int)(i, size);
+  if (e < 0)
+    e = 0;
+  else if (e > 32767)
+    e = 32767;
+  x.i.h = e << 16;
+  x.i.j = 0;
+  x.i.k = 0;
+  x.i.l = 0;
+  return *q * x.q;
+}
+
 __REAL4_T
 ENTF90(SETEXPX, setexpx)(__REAL4_T f, __INT_T i)
 {
@@ -4711,6 +4919,10 @@ ENTF90(SETEXPX, setexpx)(__REAL4_T f, __INT_T i)
   y.f = f;
   if (y.f == 0.0)
     return y.f;
+  if ((y.i & 0x7FFFFFFF) == 0x7F800000) {
+    y.i = 0x7FC00000;
+    return y.f;
+  }
   y.i &= ~0x7F800000;
   y.i |= 0x3F800000;
   e = 126 + i;
@@ -4734,6 +4946,10 @@ ENTF90(SETEXP, setexp)(__REAL4_T *f, void *i, __INT_T *size)
   y.f = *f;
   if (y.f == 0.0)
     return y.f;
+  if ((y.i & 0x7FFFFFFF) == 0x7F800000) {
+    y.i = 0x7FC00000;
+    return y.f;
+  }
   y.i &= ~0x7F800000;
   y.i |= 0x3F800000;
   e = 126 + I8(__fort_varying_int)(i, size);
@@ -4754,6 +4970,10 @@ ENTF90(SETEXPDX, setexpdx)(__REAL8_T d, __INT_T i)
   y.d = d;
   if (y.d == 0.0)
     return y.d;
+  if ((y.ll & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000){
+    y.ll = 0x7FF8000000000000;
+    return y.d;
+  }
   y.i.h &= ~0x7FF00000;
   y.i.h |= 0x3FF00000;
   e = 1022 + i;
@@ -4775,6 +4995,10 @@ ENTF90(SETEXPD, setexpd)(__REAL8_T *d, void *i, __INT_T *size)
   y.d = *d;
   if (y.d == 0.0)
     return y.d;
+  if ((y.ll & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000) {
+    y.ll = 0x7FF8000000000000;
+    return y.d;
+  }
   y.i.h &= ~0x7FF00000;
   y.i.h |= 0x3FF00000;
   e = 1022 + I8(__fort_varying_int)(i, size);
@@ -4785,6 +5009,62 @@ ENTF90(SETEXPD, setexpd)(__REAL8_T *d, void *i, __INT_T *size)
   x.i.h = e << 20;
   x.i.l = 0;
   return x.d * y.d;
+}
+
+__REAL16_T
+ENTF90(SETEXPQX, setexpqx)(__REAL16_T q, __INT_T i)
+{
+  int e;
+  __REAL16_SPLIT x, y;
+
+  y.q = q;
+  if (y.q == 0.0)
+    return y.q;
+  if ((y.ll.h & 0x7fffffffffffffff) == 0x7fff000000000000 &&
+          (y.ll.l & ~0x0) == 0x0) {
+    y.ll.h = 0x7FFF800000000000;
+    return y.q;
+  }
+  y.i.h &= ~0x7FFF0000;
+  y.i.h |= 0x3FFF0000;
+  e = 16382 + i;
+  if (e < 0)
+    e = 0;
+  else if (e > 32767)
+    e = 32767;
+  x.i.h = e << 16;
+  x.i.j = 0;
+  x.i.k = 0;
+  x.i.l = 0;
+  return x.q * y.q;
+}
+
+__REAL16_T
+ENTF90(SETEXPQ, setexpq)(__REAL16_T q, void *i, __INT_T *size)
+{
+  int e;
+  __REAL16_SPLIT x, y;
+
+  y.q = q;
+  if (y.q == 0.0)
+    return y.q;
+  if ((y.ll.h & 0x7fffffffffffffff) == 0x7fff000000000000 &&
+          (y.ll.l & ~0x0) == 0x0) {
+    y.ll.h = 0x7fff800000000000;
+    return y.q;
+  }
+  y.i.h &= ~0x7FFF0000;
+  y.i.h |= 0x3FFF0000;
+  e = 16382 + I8(__fort_varying_int)(i, size);
+  if (e < 0)
+    e = 0;
+  else if (e > 32767)
+    e = 32767;
+  x.i.h = e << 16;
+  x.i.j = 0;
+  x.i.k = 0;
+  x.i.l = 0;
+  return x.q * y.q;
 }
 
 __REAL4_T
@@ -4831,6 +5111,27 @@ ENTF90(SPACINGD, spacingd)(__REAL8_T *d)
   return ENTF90(SPACINGDX, spacingdx)(*d);
 }
 
+__REAL16_T
+ENTF90(SPACINGQX, spacingqx)(__REAL16_T q)
+{
+  int e;
+  __REAL16_SPLIT x;
+
+  x.q = q;
+  e = ((x.i.h >> 16) & 0x7FFF) - 112;
+  if (e < 1)
+    e = 1;
+  x.i.h = e << 16;
+  x.i.l = x.i.j = x.i.k = 0;
+  return x.q;
+}
+
+__REAL16_T
+ENTF90(SPACINGQ, spacingq)(const __REAL16_T *q)
+{
+  return ENTF90(SPACINGQX, spacingqx)(*q);
+}
+
 #ifndef DESC_I8
 
 typedef __INT8_T SZ_T;
@@ -4852,6 +5153,8 @@ _MZERO(4, int)
 
 _MZERO(8, long long)
 
+_MZERO(16, long long)
+
 void
 ENTF90(MZEROZ8, mzeroz8)(void *d, SZ_T size)
 {
@@ -4865,6 +5168,14 @@ ENTF90(MZEROZ16, mzeroz16)(void *d, SZ_T size)
 {
   if (d && size > 0) {
     __c_mzero8(d, size * 2);
+  }
+}
+
+void
+ENTF90(MZEROZ32, mzeroz32)(void *d, SZ_T size)
+{
+  if (d && size > 0) {
+    __c_mzero16(d, size * 2);
   }
 }
 
@@ -4883,6 +5194,8 @@ _MSET(2, short)
 _MSET(4, int)
 
 _MSET(8, long long)
+
+_MSET(16, long double)
 
 void
 ENTF90(MSETZ8, msetz8)(void *d, void *v, SZ_T size)
@@ -4920,6 +5233,24 @@ ENTF90(MSETZ16, msetz16)(void *d, void *v, SZ_T size)
   }
 }
 
+void
+ENTF90(MSETZ32, msetz32)(void *d, void *v, SZ_T size)
+{
+  if (d) {
+    SZ_T i;
+    long double *pd;
+    long double v0, v1;
+    pd = (long double *)d;
+    v0 = ((long double *)v)[0];
+    v1 = ((long double *)v)[1];
+    for (i = 0; i < size; i++) {
+      pd[0] = v0;
+      pd[1] = v1;
+      pd += 2;
+    }
+  }
+}
+
 #undef _MCOPY
 #define _MCOPY(n, t)                                                           \
   void ENTF90(MCOPY##n, mcopy##n)(void *d, void *v, SZ_T size)                 \
@@ -4936,6 +5267,8 @@ _MCOPY(4, int)
 
 _MCOPY(8, long long)
 
+_MCOPY(16, long double)
+
 void
 ENTF90(MCOPYZ8, mcopyz8)(void *d, void *v, SZ_T size)
 {
@@ -4949,6 +5282,14 @@ ENTF90(MCOPYZ16, mcopyz16)(void *d, void *v, SZ_T size)
 {
   if (d && v && size) {
     __c_mcopy8(d, v, size * 2);
+  }
+}
+
+void
+ENTF90(MCOPYZ32, mcopyz32)(void *d, void *v, SZ_T size)
+{
+  if (d && v && size) {
+    __c_mcopy16(d, v, size * 2);
   }
 }
 

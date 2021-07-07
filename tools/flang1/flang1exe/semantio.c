@@ -1168,8 +1168,8 @@ semantio(int rednum, SST *top)
                    (dtype == DT_INT8 || dtype == DT_INT4 || dtype == DT_SINT ||
                     dtype == DT_BINT || dtype == DT_LOG8 || dtype == DT_LOG ||
                     dtype == DT_SLOG || dtype == DT_BLOG || dtype == DT_REAL4 ||
-                    dtype == DT_REAL8 || dtype == DT_CMPLX8 ||
-                    dtype == DT_CMPLX16 ||
+                    dtype == DT_REAL8 || dtype == DT_QUAD || dtype == DT_CMPLX8 ||
+                    dtype == DT_CMPLX16 || dtype == DT_QCMPLX ||
                     (DTY(dtype) == TY_CHAR && fmttyp == FT_LIST_DIRECTED))) {
 
           i = sym_mkfunc_nodesc(mkRteRtnNm(getWriteByDtypeRtn(dtype, fmttyp)),
@@ -6138,6 +6138,10 @@ getWriteByDtypeRtn(int dtype, FormatType fmttyp)
     rtlRtn = (fmttyp == FT_LIST_DIRECTED) ? RTE_f90io_sc_d_ldw
                                           : RTE_f90io_sc_d_fmt_write;
     break;
+  case DT_QUAD:
+    rtlRtn = (fmttyp == FT_LIST_DIRECTED) ? RTE_f90io_sc_q_ldw
+                                          : RTE_f90io_sc_q_fmt_write;
+    break;
   case DT_INT8:
     rtlRtn = (fmttyp == FT_LIST_DIRECTED) ? RTE_f90io_sc_l_ldw
                                           : RTE_f90io_sc_l_fmt_write;
@@ -6163,6 +6167,10 @@ getWriteByDtypeRtn(int dtype, FormatType fmttyp)
   case DT_CMPLX16:
     rtlRtn = (fmttyp == FT_LIST_DIRECTED) ? RTE_f90io_sc_cd_ldw
                                           : RTE_f90io_sc_cd_fmt_write;
+    break;
+  case DT_QCMPLX:
+    rtlRtn = (fmttyp == FT_LIST_DIRECTED) ? RTE_f90io_sc_cq_ldw
+                                          : RTE_f90io_sc_cq_fmt_write;
     break;
   default:
     if (DTY(dtype) == TY_CHAR) {

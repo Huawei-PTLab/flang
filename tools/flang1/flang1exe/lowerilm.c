@@ -3793,12 +3793,23 @@ lower_stmt(int std, int ast, int lineno, int label)
     case TY_DBLE:
       plower("oii", "DST", lilm, rilm);
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    /* to support quad precision store in ilm */
+    case TY_QUAD:
+      plower("oii", "QFST", lilm, rilm);
+      break;
+#endif
     case TY_CMPLX:
       plower("oii", "CST", lilm, rilm);
       break;
     case TY_DCMPLX:
       plower("oii", "CDST", lilm, rilm);
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QCMPLX:
+      plower("oii", "CQST", lilm, rilm);
+      break;
+#endif
     case TY_CHAR:
       plower("oii", "SST", lilm, rilm);
       break;
@@ -4582,6 +4593,9 @@ lower_stmt(int std, int ast, int lineno, int label)
       case TY_QUAD:
       case TY_CMPLX:
       case TY_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+#endif
       case TY_BLOG:
       case TY_SLOG:
       case TY_LOG:
@@ -5866,12 +5880,23 @@ lower_typeload(int dtype, int base)
   case TY_DBLE:
     ilm = plower("oi", "DLD", base);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  /* output the quad precision load in ilm */
+  case TY_QUAD:
+    ilm = plower("oi", "QFLD", base);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "CLD", base);
     break;
   case TY_DCMPLX:
     ilm = plower("oi", "CDLD", base);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "CQLD", base);
+    break;
+#endif
   case TY_PTR:
     if (!XBIT(49, 0x20000000)) {
       ilm = plower("oir", "PLD", base, 0);
@@ -5930,12 +5955,22 @@ lower_typestore(int dtype, int base, int rhs)
   case TY_DBLE:
     ilm = plower("oii", "DST", base, rhs);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oii", "QFST", base, rhs);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oii", "CST", base, rhs);
     break;
   case TY_DCMPLX:
     ilm = plower("oii", "CDST", base, rhs);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oii", "CQST", base, rhs);
+    break;
+#endif
   case TY_PTR:
     if (!XBIT(49, 0x20000000)) {
       ilm = plower("oii", "PST", base, rhs);
@@ -6615,9 +6650,9 @@ lower_data_stmts(void)
         lower_use_datatype(dinittype, 1);
         break;
       case TY_DBLE:
+      case TY_QUAD:
       case TY_CMPLX:
       case TY_DCMPLX:
-      case TY_QUAD:
       case TY_QCMPLX:
       case TY_INT8:
       case TY_LOG8:

@@ -69,6 +69,7 @@ public:
     argtype["D"] = DT_DBLE;
     argtype["C"] = DT_CMPLX;
     argtype["CD"] = DT_DCMPLX;
+    argtype["CQ"] = DT_QCMPLX;
     argtype["SI"] = DT_SINT;
     argtype["H"] = DT_CHAR;
     argtype["N"] = DT_NUMERIC;
@@ -78,6 +79,7 @@ public:
     argtype["I8"] = DT_INT8;
     argtype["L8"] = DT_LOG8;
     argtype["K"] = DT_NCHAR;
+    argtype["Q"] = DT_QUAD;
     argtype["PI"] = __POINT_T;
 
     elt[".IN"] = LT_IN;

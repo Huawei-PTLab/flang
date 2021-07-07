@@ -26,6 +26,7 @@ set(GENERIC_SRCS
   alog10.c
   alog.c
   anint.c
+  aqanint.c
   around.c
   asin.c
   asinh.c
@@ -49,6 +50,7 @@ set(GENERIC_SRCS
   dlog.c
   dnint.c
   dpowd.c
+  dqanint.c
   dremainder.c
   dround.c
   dsin.c
@@ -59,11 +61,36 @@ set(GENERIC_SRCS
   exp.c
   fabs.c
   idnint.c
+  iqnint.c
   knint.c
+  kqnint.c
   log10.c
   log.c
   mthi64.c
   nint.c
+  qabs.c
+  qacos.c
+  qacosh.c
+  qanint.c
+  qasin.c
+  qasinh.c
+  qatan2.c
+  qatan.c
+  qatanh.c
+  qcos.c
+  qcosh.c
+  qexp.c
+  qint.c
+  qlog10.c
+  qlog.c
+  qpowq.c
+  qremainder.c
+  qround.c
+  qsin.c
+  qsinh.c
+  qsqrt.c
+  qtan.c
+  qtanh.c
   remainder.c
   round.c
   rpowr.c

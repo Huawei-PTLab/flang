@@ -859,9 +859,12 @@ static struct {  /* Register temporary information */
     {'k', "ka", DT_DCMPLX, 0, 0, -1}, /* 6: double complex temps */
     {'h', "ha", DT_NONE, 0, 0, -1},   /* 7: filler */
     {'v', "va", DT_NONE, 0, 0, -1},   /* 8: vector temps */
-#if   defined LONG_DOUBLE_FLOAT128
+#if defined(LONG_DOUBLE_FLOAT128)
     {'X', "Xa", DT_FLOAT128, 0, 0, -1}, /* 9: float128 temps */
-    {'x', "xa", DT_CMPLX128, 0, 0, -1}, /*10: float complex temps */
+    {'x', "xa", DT_CMPLX128, 0, 0, -1}, /*10: float128 complex temps */
+#elif defined(TARGET_SUPPORTS_QUADFP)
+    {'X', "Xa", DT_QUAD, 0, 0, -1},   /* 9: quad precision temps  */
+    {'x', "xa", DT_QCMPLX, 0, 0, -1}, /* 10: quad complex temps */
 #else
     {'X', "Xa", DT_NONE, 0, 0, -1}, /* 9 and 10: filler */
     {'x', "xa", DT_NONE, 0, 0, -1}, /* 9 and 10: filler */
@@ -1003,6 +1006,10 @@ mkrtemp_arg1_sc(DTYPE dtype, SC_KIND sc)
     type = 5;
   else if (dtype == DT_DCMPLX)
     type = 6;
+#ifdef TARGET_SUPPORTS_QUADFP
+  else if (dtype == DT_QCMPLX)
+    type = 10;
+#endif
 #ifdef LONG_DOUBLE_FLOAT128
   else if (dtype == DT_CMPLX128)
     type = 6;
@@ -1278,6 +1285,11 @@ select_rtemp(int ili)
         break;
       }
     }
+#ifdef TARGET_SUPPORTS_QUADFP
+  case ILIA_QP:
+    type = 9;
+    break;
+#endif
 #ifdef ILIA_CS
   case ILIA_CS:
     type = 5;
@@ -1286,6 +1298,11 @@ select_rtemp(int ili)
 #ifdef ILIA_CD
   case ILIA_CD:
     type = 6;
+    break;
+#endif
+#ifdef TARGET_SUPPORTS_QUADFP
+  case ILIA_CQ:
+    type = 10;
     break;
 #endif
 #ifdef LONG_DOUBLE_FLOAT128

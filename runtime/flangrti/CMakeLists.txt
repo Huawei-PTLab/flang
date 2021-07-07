@@ -10,7 +10,7 @@ SET(ASM_OPTIONS "-DLINUX_ELF")
 SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
 
 if( ${TARGET_ARCHITECTURE} STREQUAL "x86_64" )
-  set(ARCH_DEP_FILES 
+  set(ARCH_DEP_FILES
     x86_64-Linux/x86_daz.c
     x86_64-Linux/x86_flushz.c
     x86_64-Linux/dumpregs.c
@@ -38,15 +38,18 @@ SET(PGC_SRC_FILES
   mcopy2.c
   mcopy4.c
   mcopy8.c
+  mcopy16.c
   mthi64.c
   mset1.c
   mset2.c
   mset4.c
   mset8.c
+  mset16.c
   mzero1.c
   mzero2.c
   mzero4.c
   mzero8.c
+  mzero16.c
   ioargs.c
   memalign.c
   iostdinit.c
@@ -86,14 +89,14 @@ endif()
 
 # Import OpenMP
 if (NOT DEFINED LIBOMP_EXPORT_DIR)
-  find_library( 
+  find_library(
     FLANG_LIBOMP
     libomp.so
     HINTS ${CMAKE_BINARY_DIR}/lib)
   target_link_libraries(flangrti_shared ${FLANG_LIBOMP})
 endif()
 
-find_library( 
+find_library(
   LIBPGMATH
   libpgmath.so
   HINTS ${CMAKE_BINARY_DIR}/lib)

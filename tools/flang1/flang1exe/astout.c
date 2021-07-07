@@ -938,12 +938,20 @@ print_ast(int ast)
       argt = A_ARGSG(ast);
       if (DTY(DDTG(A_DTYPEG(ARGT_ARG(argt, 0)))) == TY_REAL)
         rtlRtn = RTE_expon;
+#ifdef TARGET_SUPPORTS_QUADFP
+      else if (DTY(DDTG(A_DTYPEG(ARGT_ARG(argt, 0)))) == TY_QUAD)
+        rtlRtn = RTE_exponq;
+#endif
       else
         rtlRtn = RTE_expond;
       goto make_func_name;
     case I_FRACTION:
       if (DTY(DDTG(A_DTYPEG(ast))) == TY_REAL)
         rtlRtn = RTE_frac;
+#ifdef TARGET_SUPPORTS_QUADFP
+      else if (DTY(DDTG(A_DTYPEG(ast))) == TY_QUAD)
+        rtlRtn = RTE_fracq;
+#endif
       else
         rtlRtn = RTE_fracd;
       goto make_func_name;
@@ -953,30 +961,50 @@ print_ast(int ast)
     case I_RRSPACING:
       if (DTY(DDTG(A_DTYPEG(ast))) == TY_REAL)
         rtlRtn = RTE_rrspacing;
+#ifdef TARGET_SUPPORTS_QUADFP
+      else if (DTY(DDTG(A_DTYPEG(ast))) == TY_QUAD)
+        rtlRtn = RTE_rrspacingq;
+#endif
       else
         rtlRtn = RTE_rrspacingd;
       goto make_func_name;
     case I_SPACING:
       if (DTY(DDTG(A_DTYPEG(ast))) == TY_REAL)
         rtlRtn = RTE_spacing;
+#ifdef TARGET_SUPPORTS_QUADFP
+      else if (DTY(DDTG(A_DTYPEG(ast))) == TY_QUAD)
+        rtlRtn = RTE_spacingq;
+#endif
       else
         rtlRtn = RTE_spacingd;
       goto make_func_name;
     case I_NEAREST:
       if (DTY(DDTG(A_DTYPEG(ast))) == TY_REAL)
         rtlRtn = RTE_nearest;
+#ifdef TARGET_SUPPORTS_QUADFP
+      else if (DTY(DDTG(A_DTYPEG(ast))) == TY_QUAD)
+        rtlRtn = RTE_nearestq;
+#endif
       else
         rtlRtn = RTE_nearestd;
       goto make_func_name;
     case I_SCALE:
       if (DTY(DDTG(A_DTYPEG(ast))) == TY_REAL)
         rtlRtn = RTE_scale;
+#ifdef TARGET_SUPPORTS_QUADFP
+      else if (DTY(DDTG(A_DTYPEG(ast))) == TY_QUAD)
+        rtlRtn = RTE_scaleq;
+#endif
       else
         rtlRtn = RTE_scaled;
       goto make_func_name;
     case I_SET_EXPONENT:
       if (DTY(DDTG(A_DTYPEG(ast))) == TY_REAL)
         rtlRtn = RTE_setexp;
+#ifdef TARGET_SUPPORTS_QUADFP
+      else if (DTY(DDTG(A_DTYPEG(ast))) == TY_QUAD)
+        rtlRtn = RTE_setexpq;
+#endif
       else
         rtlRtn = RTE_setexpd;
       goto make_func_name;

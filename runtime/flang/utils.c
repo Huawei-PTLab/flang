@@ -565,6 +565,16 @@ void __fortio_swap_bytes(
       SWAPB(p, 2, 5, btmp);
       SWAPB(p, 3, 4, btmp);
       break;
+    case 16: /* quadruple-word */
+      SWAPB(p, 0, 15, btmp);
+      SWAPB(p, 1, 14, btmp);
+      SWAPB(p, 2, 13, btmp);
+      SWAPB(p, 3, 12, btmp);
+      SWAPB(p, 4, 11, btmp);
+      SWAPB(p, 5, 10, btmp);
+      SWAPB(p, 6, 9, btmp);
+      SWAPB(p, 7, 8, btmp);
+      break;
     default: /* error */
       assert(0);
       return;

@@ -58,6 +58,7 @@ void fperror(int errcode);
 #define mftof(mf,f) (*((float *)&(f))=(mf))
 void xdtomd(IEEE64 d, double *md);
 void xmdtod(double md, IEEE64 d);
+void xmqtoq(long double mq, IEEE128 q);
 
 int cmp64(DBLINT64 arg1, DBLINT64 arg2);
 int ucmp64(DBLUINT64 arg1, DBLUINT64 arg2);
@@ -149,6 +150,7 @@ void xesub(IEEE80 e1, IEEE80 e2, IEEE80 r);
 void xddsub(IEEE6464 dd1, IEEE6464 dd2, IEEE6464 r);
 void xqsub(IEEE128 q1, IEEE128 q2, IEEE128 r);
 int xdisint(IEEE64 d, int *r);
+int xqisint(IEEE128 q, int *r);
 void xfneg(IEEE32 f1, IEEE32 *r);
 void xdneg(IEEE64 d1, IEEE64 r);
 void xeneg(IEEE80 e1, IEEE80 r);
@@ -174,6 +176,7 @@ void xeabsv(IEEE80 e, IEEE80 r);
 void xddabsv(IEEE6464 dd, IEEE6464 r);
 void xqabsv(IEEE128 f, IEEE128 r);
 void xdsqrt(IEEE64 f, IEEE64 r);
+void xqsqrt(IEEE128 f, IEEE128 r);
 void xfpow(IEEE32 f1, IEEE32 f2, IEEE32 *r);
 void xdpow(IEEE64 d1, IEEE64 d2, IEEE64 r);
 void xepow(IEEE80 e1, IEEE80 e2, IEEE80 r);
@@ -280,6 +283,10 @@ int xecmp(IEEE80 e1, IEEE80 e2);
 int xdcmp(IEEE64 d1, IEEE64 d2);
 int xfcmp(IEEE32 f1, IEEE32 f2);
 int xucmp(INT a, INT b);
+
+void xcfpow(IEEE32 r1, IEEE32 i1, IEEE32 r2, IEEE32 i2, IEEE32 *rr, IEEE32 *ir);
+void xcdpow(IEEE64 r1, IEEE64 i1, IEEE64 r2, IEEE64 i2, IEEE64 rr, IEEE64 ir);
+void xcqpow(IEEE128 r1, IEEE128 i1, IEEE128 r2, IEEE128 i2, IEEE128 rr, IEEE128 ir);
 
 #ifdef __cplusplus
 }

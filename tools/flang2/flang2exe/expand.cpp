@@ -484,7 +484,11 @@ eval_ilm(int ilmx)
      * For each operand which is a link to another ilm, recurse (evaluate it)
      * if not already evaluated
      */
-    if (opcx == IM_DCMPLX || opcx == IM_CMPLX) {
+    if (opcx == IM_DCMPLX || opcx == IM_CMPLX
+#ifdef TARGET_SUPPORTS_QUADFP
+        || opcx == IM_QCMPLX
+#endif
+       ) {
       for (tmp = 1, noprs = 1; noprs <= ilms[opcx].oprs; ++tmp, ++noprs) {
         if (IM_OPRFLAG(opcx, noprs) == OPR_LNK) {
           eval_ilm_argument1(noprs, ilmpx, ilmx);
@@ -1150,7 +1154,22 @@ exp_load(ILM_OP opc, ILM *ilmp, int curilm)
       ILM_RESTYPE(curilm) = ILM_ISDCMPLX;
       return;
     }
-
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQLD:
+    if (XBIT(70, 0x40000000)) {
+      CHECK_NME(nme, dt_nme(nme) != DT_QCMPLX);
+      load = ad3ili(IL_LDQCMPLX, addr, nme, MSZ_F32);
+      goto cand_load;
+    } else {
+      imag = ad3ili(IL_AADD, addr, ad_aconi(size_of(DT_QUAD)), 0);
+      tmp = addnme(NT_MEM, SPTR_NULL, nme, 0);
+      ILM_RRESULT(curilm) = ad3ili(IL_LDQP, addr, tmp, MSZ_F16);
+      tmp = addnme(NT_MEM, NOSYM, nme, 16);
+      ILM_IRESULT(curilm) = ad3ili(IL_LDQP, imag, tmp, MSZ_F16);
+      ILM_RESTYPE(curilm) = ILM_ISQCMPLX;
+      return;
+    }
+#endif
   case IM_ILD:
   case IM_LLD:
     confl = false;
@@ -1213,11 +1232,18 @@ exp_load(ILM_OP opc, ILM *ilmp, int curilm)
     CHECK_NME(nme, dt_nme(nme) != DT_DBLE);
     load = ad3ili(IL_LDDP, addr, nme, MSZ_F8);
     goto cand_load;
-  case IM_QLD: /*m128*/
+  case IM_QLD: /* m128 */
     CHECK_NME(nme, DTY(dt_nme(nme)) != TY_128);
     load = ad3ili(IL_LDQ, addr, nme, MSZ_F16);
     goto cand_load;
-  case IM_M256LD: /*m256*/
+#ifdef TARGET_SUPPORTS_QUADFP
+  /* transform the QFLD ilm to LDQP ili */
+  case IM_QFLD: /* fp128 */
+    CHECK_NME(nme, DTY(dt_nme(nme)) != TY_QUAD);
+    load = ad3ili(IL_LDQP, addr, nme, MSZ_F16);
+    goto cand_load;
+#endif
+  case IM_M256LD: /* m256 */
     CHECK_NME(nme, DTY(dt_nme(nme)) != TY_256);
     load = ad3ili(IL_LD256, addr, nme, MSZ_F32);
     goto cand_load;
@@ -1586,7 +1612,16 @@ exp_store(ILM_OP opc, ILM *ilmp, int curilm)
       nme = add_arrnme(NT_ARR, SPTR_NULL, nme, 0, ad_icon(0), NME_INLARR(nme));
     CHECK_NME(nme, DTY(dt_nme(nme)) != TY_128);
     store = ad4ili(IL_STQ, (int)ILI_OF(op2), (int)ILI_OF(op1), nme, MSZ_F16);
+	goto cand_store;
+#ifdef TARGET_SUPPORTS_QUADFP
+  /* transform the QFST ilm TO STQP ili */
+  case IM_QFST: 
+    if (NME_TYPE(nme) == NT_VAR && DTY(DTYPEG(NME_SYM(nme))) == TY_ARRAY)
+      nme = add_arrnme(NT_ARR, SPTR_NULL, nme, 0, ad_icon(0), NME_INLARR(nme));
+    CHECK_NME(nme, DTY(dt_nme(nme)) != TY_QUAD);
+    store = ad4ili(IL_STQP, (int)ILI_OF(op2), (int)ILI_OF(op1), nme, MSZ_F16);
     goto cand_store;
+#endif
   case IM_M256ST: /*m256*/
     if (NME_TYPE(nme) == NT_VAR && DTY(DTYPEG(NME_SYM(nme))) == TY_ARRAY)
       nme = add_arrnme(NT_ARR, SPTR_NULL, nme, 0, ad_icon(0), NME_INLARR(nme));
@@ -1807,6 +1842,42 @@ exp_store(ILM_OP opc, ILM *ilmp, int curilm)
                      nme, MSZ_F8);
       ILM_RESTYPE(curilm) = ILM_ISDCMPLX;
     }
+#ifdef TARGET_SUPPORTS_QUADFP
+    goto cmplx_shared;
+
+  case IM_CQST:
+    if (XBIT(70, 0x40000000)) {
+      if (NME_TYPE(nme) == NT_VAR && DTY(DTYPEG(NME_SYM(nme))) == TY_ARRAY)
+        nme =
+            add_arrnme(NT_ARR, SPTR_NULL, nme, 0, ad_icon(0), NME_INLARR(nme));
+      CHECK_NME(nme, dt_nme(nme) != DT_QCMPLX);
+      store = ad4ili(IL_STQCMPLX, ILI_OF(op2), ILI_OF(op1), nme, MSZ_F32);
+      goto cand_store;
+    } else {
+      tmp = expb.curilt;
+      store = ad1ili(IL_FREEQP, (int)ILM_RRESULT(op2));
+      chk_block(store);
+      if (tmp != expb.curilt)
+        ILT_CPLX(expb.curilt) = 1;
+
+      nme = addnme(NT_MEM, NOSYM, NME_OF(op1), 16);
+      imag = ad3ili(IL_AADD, ILI_OF(op1), ad_aconi(size_of(DT_QUAD)), 0);
+      store = ad4ili(IL_STQP, ILM_IRESULT(op2), imag, nme, MSZ_F16);
+      tmp = expb.curilt;
+      chk_block(store);
+      if (tmp != expb.curilt)
+        ILT_CPLX(expb.curilt) = 1;
+      ILM_IRESULT(curilm) = store;
+      if (EXPDBG(8, 16))
+        fprintf(gbl.dbgfil, "store imag: ilm %d, block %d, ili %d\n", curilm,
+                expb.curbih, store);
+
+      nme = addnme(NT_MEM, SPTR_NULL, NME_OF(op1), 0);
+      store = ad4ili(IL_STQP, ad1ili(IL_CSEQP, ILM_RRESULT(op2)), ILI_OF(op1),
+                     nme, MSZ_F16);
+      ILM_RESTYPE(curilm) = ILM_ISQCMPLX;
+    }
+#endif
   cmplx_shared:
     SET_ASSN(NME_OF(op1));
     tmp = expb.curilt;
@@ -2156,6 +2227,15 @@ exp_mac(ILM_OP opc, ILM *ilmp, int curilm)
         interr("exp_mac: need DP_RETVAL", (int)ilmopr->type, ERR_Severe);
 #endif
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case ILMO_QPRET:
+#if defined(QP_RETVAL)
+        newili.opnd[i] = QP_RETVAL;
+#else
+        interr("exp_mac: need QP_RETVAL", (int)ilmopr->type, ERR_Severe);
+#endif
+        break;
+#endif
       case ILMO_KRRET:
 #if defined(KR_RETVAL)
         newili.opnd[i] = KR_RETVAL;
@@ -2275,6 +2355,11 @@ efunc(const char *nm)
     case 'd':
       resdt = DT_DBLE;
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case 'q':
+      resdt = DT_QUAD;
+      break;
+#endif
     case 'i':
       resdt = DT_INT;
       break;

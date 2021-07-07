@@ -86,11 +86,20 @@ static int add_gargl_closure(SPTR sdsc);
 
 #define mk_prototype mk_prototype_llvm
 
+#ifdef TARGET_SUPPORTS_QUADFP
+#define IS_INTERNAL_PROC_CALL(opc)                                  \
+  (opc == IM_PCALLA || opc == IM_PCHFUNCA || opc == IM_PNCHFUNCA || \
+   opc == IM_PKFUNCA || opc == IM_PLFUNCA || opc == IM_PIFUNCA ||   \
+   opc == IM_PRFUNCA || opc == IM_PDFUNCA || opc == IM_PCFUNCA ||   \
+   opc == IM_PQFUNCA || opc == IM_PCDFUNCA || opc == IM_PCQFUNCA || \
+   opc == IM_PPFUNCA)
+#else
 #define IS_INTERNAL_PROC_CALL(opc)                                  \
   (opc == IM_PCALLA || opc == IM_PCHFUNCA || opc == IM_PNCHFUNCA || \
    opc == IM_PKFUNCA || opc == IM_PLFUNCA || opc == IM_PIFUNCA ||   \
    opc == IM_PRFUNCA || opc == IM_PDFUNCA || opc == IM_PCFUNCA ||   \
    opc == IM_PCDFUNCA || opc == IM_PPFUNCA)
+#endif
 
 static SPTR exp_call_sym; /**< sptr subprogram being called */
 static SPTR fptr_iface;   /**< sptr of function pointer's interface */
@@ -635,6 +644,7 @@ pp_entries(void)
       break;
     case TY_CMPLX:
     case TY_DCMPLX:
+    case TY_QCMPLX:
       /* for complex functions, an extra argument is the first argument
        * which is also used to return the result.
        */
@@ -707,9 +717,9 @@ pp_entries(void)
         if (DTY(dt) == TY_DBLE || DTY(dt) == TY_INT8 || DTY(dt) == TY_LOG8 ||
             DTY(dt) == TY_CMPLX)
           total_words++;
-        else if (DTY(dt) == TY_DCMPLX)
+        else if (DTY(dt) == TY_DCMPLX || DTY(dt) == TY_QUAD)
           total_words += 3;
-        else if (DTY(dt) == TY_STRUCT && (size_of(DTYPEG(osym)) > 4))
+        else if ((DTY(dt) == TY_STRUCT && (size_of(DTYPEG(osym)) > 4)) || DTY(dt) == TY_QCMPLX)
           total_words += size_of(DTYPEG(osym)) / 4 - 1;
       }
 
@@ -1007,9 +1017,9 @@ pp_entries_mixedstrlen(void)
         if (DTY(dt) == TY_DBLE || DTY(dt) == TY_INT8 || DTY(dt) == TY_LOG8 ||
             DTY(dt) == TY_CMPLX)
           total_words++;
-        else if (DTY(dt) == TY_DCMPLX)
+        else if (DTY(dt) == TY_DCMPLX || DTY(dt) == TY_QUAD)
           total_words += 3;
-        else if (DTY(dt) == TY_STRUCT && (size_of(DTYPEG(osym)) > 4))
+        else if ((DTY(dt) == TY_STRUCT && (size_of(DTYPEG(osym)) > 4)) || DTY(dt) == TY_QCMPLX)
           total_words += size_of(DTYPEG(osym)) / 4 - 1;
       }
 
@@ -1498,6 +1508,7 @@ pp_params(SPTR func)
     break;
   case TY_CMPLX:
   case TY_DCMPLX:
+  case TY_QCMPLX:
     /*
      * If this is a function which returns complex, the first arg is
      * also for the return value.  The last entry in the function's
@@ -1580,9 +1591,9 @@ scan_args:
       if (argdtype == DT_DBLE || argdtype == DT_INT8 || argdtype == DT_LOG8 ||
           argdtype == DT_CMPLX)
         pf->mem_off += 8;
-      else if (argdtype == DT_DCMPLX)
+      else if (argdtype == DT_DCMPLX || argdtype == DT_QUAD)
         pf->mem_off += 16;
-      else if (DTY(argdtype) == TY_STRUCT)
+      else if (DTY(argdtype) == TY_STRUCT || argdtype == DT_QCMPLX)
         pf->mem_off += size_of(argdtype);
       else
         pf->mem_off += 4;
@@ -1798,9 +1809,9 @@ scan_args:
       if (argdtype == DT_DBLE || argdtype == DT_INT8 || argdtype == DT_LOG8 ||
           argdtype == DT_CMPLX)
         pf->mem_off += 8;
-      else if (argdtype == DT_DCMPLX)
+      else if (argdtype == DT_DCMPLX || argdtype == DT_QUAD)
         pf->mem_off += 16;
-      else if (DTY(argdtype) == TY_STRUCT)
+      else if (DTY(argdtype) == TY_STRUCT || argdtype == DT_QCMPLX)
         pf->mem_off += size_of(argdtype);
       else
         pf->mem_off += 4;
@@ -1896,13 +1907,23 @@ ldst_size(DTYPE dtype, ILI_OP *ldo, ILI_OP *sto, int *siz)
     *ldo = IL_LDKR;
     *sto = IL_STKR;
     break;
+#ifndef TARGET_SUPPORTS_QUADFP
   case TY_QUAD:
+#endif
   case TY_DBLE:
   case TY_DCMPLX:
     *siz = MSZ_F8;
     *ldo = IL_LDDP;
     *sto = IL_STDP;
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+  case TY_QCMPLX:
+    *siz = MSZ_F16;
+    *ldo = IL_LDQP;
+    *sto = IL_STQP;
+    break;
+#endif
   case TY_PTR:
     *siz = MSZ_WORD;
     *ldo = IL_LDA;
@@ -2425,6 +2446,9 @@ gen_funcret(finfo_t *fp)
     return;
   case TY_CMPLX:
   case TY_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+#endif
     if (!CFUNCG(gbl.currsub) && !CMPLXFUNC_C)
       return;
     move = ad2ili(IL_MVAR, addr, RES_IR(0));
@@ -2443,6 +2467,12 @@ gen_funcret(finfo_t *fp)
     ili1 = ad3ili(IL_LDDP, addr, nme, MSZ_F8);
     move = ad2ili(IL_MVDP, ili1, FR_RETVAL);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ili1 = ad3ili(IL_LDQP, addr, nme, MSZ_F16);
+    move = ad2ili(IL_MVQ, ili1, FR_RETVAL);
+    break;
+#endif
   case TY_BINT:
   case TY_BLOG:
     ili1 = ad3ili(IL_LD, addr, nme, MSZ_SBYTE);
@@ -2793,6 +2823,7 @@ static void arg_ar(int, ainfo_t *, int);
 static void arg_hp(int, ainfo_t *);
 static void arg_sp(int, ainfo_t *);
 static void arg_dp(int, ainfo_t *);
+static void arg_qp(int, ainfo_t *);
 static void arg_charlen(int, ainfo_t *);
 static void arg_length(STRDESC *, ainfo_t *);
 
@@ -2870,6 +2901,11 @@ add_arg_ili(int ilix, int nme, int dtype)
   case ILIA_DP:
     add_to_args(IL_ARGDP, ilix);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case ILIA_QP:
+    add_to_args(IL_ARGQP, ilix);
+    break;
+#endif
   case ILIA_AR:
     add_to_args(IL_ARGAR, ilix);
     break;
@@ -2905,6 +2941,11 @@ put_arg_ili(int i, ainfo_t *ainfo)
   case IL_ARGDP:
     arg_dp(arg_ili[i].ili_arg, ainfo);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IL_ARGQP:
+    arg_qp(arg_ili[i].ili_arg, ainfo);
+    break;
+#endif
   default:
     interr("exp_call: ili arg type not cased", arg_ili[i].ili_arg, ERR_Severe);
     break;
@@ -3287,8 +3328,14 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
   case IM_IFUNC:
   case IM_RFUNC:
   case IM_DFUNC:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_QFUNC:
+#endif
   case IM_CFUNC:
   case IM_CDFUNC:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQFUNC:
+#endif
   case IM_PFUNC:
   case IM_SFUNC:
     exp_call_sym = ILM_SymOPND(ilmp, 2); /* external reference  */
@@ -3309,10 +3356,17 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
   case IM_PRFUNCA:
   case IM_DFUNCA:
   case IM_PDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_PQFUNCA:
+#endif
   case IM_CFUNCA:
   case IM_PCFUNCA:
   case IM_CDFUNCA:
   case IM_PCDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQFUNCA:
+  case IM_PCQFUNCA:
+#endif
   case IM_PFUNCA:
   case IM_PPFUNCA:
     funcptr_flags = ILM_OPND(ilmp, 2);
@@ -3364,6 +3418,11 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
   case IM_DVFUNCA:
     descno = 5;
     goto vcalla_common;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_QVFUNCA:
+    descno = 5;
+    goto vcalla_common;
+#endif
   case IM_CVFUNCA:
     descno = 5;
     goto vcalla_common;
@@ -3466,14 +3525,23 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
     break;
   case IM_CFUNC:
   case IM_CDFUNC:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQFUNC:
+#endif
     i = 3;
     goto share_cfunc;
   case IM_PCFUNCA:
   case IM_PCDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_PCQFUNCA:
+#endif
     i = 5;
     goto share_cfunc;
   case IM_CFUNCA:
   case IM_CDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQFUNCA:
+#endif
     i = 4;
   share_cfunc:
     ilm1 = ILM_OPND(ilmp, i);
@@ -3485,7 +3553,11 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
     if (CFUNCG(exp_call_sym) || (funcptr_flags & FUNCPTR_BINDC) ||
         CMPLXFUNC_C) {
       ADDRTKNP(IILM_OPND(ilm1, 1), 1);
-      if (opc == IM_CFUNCA || opc == IM_CDFUNCA) {
+      if (opc == IM_CFUNCA || opc == IM_CDFUNCA
+#ifdef TARGET_SUPPORTS_QUADFP
+          || opc == IM_CQFUNCA
+#endif
+         ) {
         ilm1 = ILM_OPND(ilmp, i);
       } else {
         ilm1 = ILM_OPND(ilmp, (i + 2));
@@ -3548,6 +3620,9 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
   case IM_LVFUNCA:
   case IM_IVFUNCA:
   case IM_RVFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_QVFUNCA:
+#endif
   case IM_DVFUNCA:
   case IM_PVFUNCA:
     i = 6;
@@ -3590,6 +3665,9 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
   case IM_PIFUNCA:
   case IM_PRFUNCA:
   case IM_PDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_PQFUNCA:
+#endif
   case IM_PLFUNCA:
   case IM_PPFUNCA:
   case IM_PKFUNCA:
@@ -3873,6 +3951,12 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
         add_to_args(IL_ARGDP, argili);
         dtype = DT_DBLE;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case ILIA_QP:
+        add_to_args(IL_ARGQP, argili);
+        dtype = DT_QUAD;
+        break;
+#endif
       case ILIA_AR:
         add_to_args(IL_ARGAR, argili);
         dtype = DT_ADDR;
@@ -3909,6 +3993,22 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
         gargili = argili;
         add_to_args(IL_ARGDP, argili);
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case ILIA_CQ:
+        dtype = DT_QUAD;
+        argili = ad1ili(IL_QCMPLX2REAL, ILM_RESULT(ilm1));
+        add_to_args(IL_ARGQP, argili);
+        if (XBIT(121, 0x800)) {
+          garg_ili[gi].ilix = argili;
+          garg_ili[gi].dtype = dtype;
+          gi++;
+          ngargs++;
+        }
+        argili = ad1ili(IL_QCMPLX2IMAG, ILM_RESULT(ilm1));
+        gargili = argili;
+        add_to_args(IL_ARGQP, argili);
+        break;
+#endif
       default:
         interr("exp_call:bad ili for DPVAL", argili, ERR_Severe);
       }
@@ -4026,12 +4126,22 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
           case ILIA_DP:
             ilix = ad4ili(IL_STDP, ilix, argili, basenm, MSZ_F8);
             break;
+#ifdef TARGET_SUPPORTS_QUADFP
+          case ILIA_QP:
+            ilix = ad4ili(IL_STQP, ilix, argili, basenm, MSZ_F16);
+            break;
+#endif
           case ILIA_CS:
             ilix = ad4ili(IL_STSCMPLX, ilix, argili, basenm, MSZ_F8);
             break;
           case ILIA_CD:
             ilix = ad4ili(IL_STDCMPLX, ilix, argili, basenm, MSZ_F16);
             break;
+#ifdef TARGET_SUPPORTS_QUADFP
+          case ILIA_CQ:
+            ilix = ad4ili(IL_STQCMPLX, ilix, argili, basenm, MSZ_F32);
+            break;
+#endif
           default:
             // in exp_call for IM_SFUNC, we decide to save IL_JSR
             // in the ILI_OF(or ILM_RESULT) field.
@@ -4322,6 +4432,14 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
   case IM_DVFUNCA:
     ILI_OF(curilm) = ad2ili(IL_DFRDP, ililnk, FR_RETVAL);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_QFUNC:
+  case IM_QFUNCA:
+  case IM_PQFUNCA:
+  case IM_QVFUNCA:
+    ILI_OF(curilm) = ad2ili(IL_DFRQP, ililnk, FR_RETVAL);
+    break;
+#endif
   case IM_CFUNC:
   case IM_CFUNCA:
   case IM_PCFUNCA:
@@ -4351,6 +4469,23 @@ exp_call(ILM_OP opc, ILM *ilmp, int curilm)
       ILM_RESTYPE(curilm) = ILM_ISDCMPLX;
     }
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQFUNC:
+  case IM_CQFUNCA:
+  case IM_PCQFUNCA:
+  case IM_CQVFUNCA:
+    chk_block(ililnk);
+    if (XBIT(70, 0x40000000)) {
+      ILM_RESULT(curilm) = ad3ili(IL_LDQCMPLX, cfunc, cfunc_nme, MSZ_F32);
+    } else {
+      ILM_RRESULT(curilm) = ad3ili(IL_LDQP, cfunc, addnme(NT_MEM, SPTR_NULL, cfunc_nme, 0), MSZ_F16);
+      ILM_IRESULT(curilm) =
+          ad3ili(IL_LDQP, ad3ili(IL_AADD, cfunc, ad_aconi(16), 0),
+                 addnme(NT_MEM, NOSYM, cfunc_nme, 16), MSZ_F16);
+      ILM_RESTYPE(curilm) = ILM_ISQCMPLX;
+    }
+    break;
+#endif
   case IM_PFUNC:
   case IM_PFUNCA:
   case IM_PPFUNCA:
@@ -4495,6 +4630,14 @@ exp_qjsr(char *ext, DTYPE res_dtype, ILM *ilmp, int curilm)
         ilix = ad1ili(IL_DCMPLX2REAL, ILM_RESULT(ilm1));
         arg_dp(ilix, &ainfo);
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case ILIA_CQ:
+        ilix = ad1ili(IL_QCMPLX2IMAG, ILM_RESULT(ilm1));
+        arg_qp(ilix, &ainfo);
+        ilix = ad1ili(IL_QCMPLX2REAL, ILM_RESULT(ilm1));
+        arg_qp(ilix, &ainfo);
+        break;
+#endif
 #endif
       default:
         interr("exp_qjsr: ili ret type not cased", ilix, ERR_Severe);
@@ -4519,6 +4662,18 @@ exp_qjsr(char *ext, DTYPE res_dtype, ILM *ilmp, int curilm)
                  addnme(NT_MEM, NOSYM, res_nme, 4), MSZ_F4);
       ILM_RESTYPE(curilm) = ILM_ISCMPLX;
     }
+#ifdef TARGET_SUPPORTS_QUADFP
+  } else if (res_dtype == DT_QCMPLX) {
+    if (XBIT(70, 0x40000000)) {
+      ILM_RESULT(curilm) = ad3ili(IL_LDQCMPLX, res_addr, res_nme, MSZ_F32);
+    } else {
+      ILM_RRESULT(curilm) = ad3ili(IL_LDQP, res_addr, addnme(NT_MEM, SPTR_NULL, res_nme, 0), MSZ_F16);
+      ILM_IRESULT(curilm) =
+          ad3ili(IL_LDQP, ad3ili(IL_AADD, res_addr, ad_aconi(16), 0),
+                 addnme(NT_MEM, NOSYM, res_nme, 16), MSZ_F16);
+      ILM_RESTYPE(curilm) = ILM_ISQCMPLX;
+    }
+#endif
   } else {
     if (XBIT(70, 0x40000000)) {
       ILM_RESULT(curilm) = ad3ili(IL_LDDCMPLX, res_addr, res_nme, MSZ_F16);
@@ -4696,6 +4851,13 @@ arg_dp(int ilix, ainfo_t *ap)
 {
   ap->lnk = ad2ili(IL_ARGDP, ilix, ap->lnk);
 }
+
+#ifdef TARGET_SUPPORTS_QUADFP
+static void arg_qp(int ilix, ainfo_t *ap)
+{
+  ap->lnk = ad2ili(IL_ARGQP, ilix, ap->lnk);
+}
+#endif
 
 static void
 arg_charlen(int ilix, ainfo_t *ap)

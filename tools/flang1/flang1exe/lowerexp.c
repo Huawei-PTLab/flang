@@ -83,6 +83,12 @@ conv_bint_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "DFIX", ilm);
     ilm = plower("oi", "ITOSC", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "QFIX", ilm);
+    ilm = plower("oi", "ITOSC", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "REAL", ilm);
     ilm = plower("oi", "FIX", ilm);
@@ -93,6 +99,13 @@ conv_bint_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "DFIX", ilm);
     ilm = plower("oi", "ITOSC", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "QREAL", ilm);
+    ilm = plower("oi", "QFIX", ilm);
+    ilm = plower("oi", "ITOSC", ilm);
+    break;
+#endif
   case TY_WORD:
     if (ast && A_TYPEG(ast) == A_CNST) {
       s = lower_getintcon(cngcon(CONVAL2G(A_SPTRG(ast)), DTYG(dtype), DT_INT4));
@@ -180,6 +193,12 @@ conv_sint_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "DFIX", ilm);
     ilm = plower("oi", "ITOS", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "QFIX", ilm);
+    ilm = plower("oi", "ITOS", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "REAL", ilm);
     ilm = plower("oi", "FIX", ilm);
@@ -190,6 +209,13 @@ conv_sint_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "DFIX", ilm);
     ilm = plower("oi", "ITOS", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "QREAL", ilm);
+    ilm = plower("oi", "QFIX", ilm);
+    ilm = plower("oi", "ITOS", ilm);
+    break;
+#endif
   case TY_WORD:
     if (ast && A_TYPEG(ast) == A_CNST) {
       s = lower_getintcon(cngcon(CONVAL2G(A_SPTRG(ast)), DTYG(dtype), DT_INT4));
@@ -280,6 +306,11 @@ conv_int_ilm(int ast, int ilm, int dtype)
   case TY_DBLE:
     ilm = plower("oi", "DFIX", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "QFIX", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "REAL", ilm);
     ilm = plower("oi", "FIX", ilm);
@@ -288,6 +319,12 @@ conv_int_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "DREAL", ilm);
     ilm = plower("oi", "DFIX", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "QREAL", ilm);
+    ilm = plower("oi", "QFIX", ilm);
+    break;
+#endif
   case TY_WORD:
     if (ast && A_TYPEG(ast) == A_CNST) {
       s = lower_getintcon(cngcon(CONVAL2G(A_SPTRG(ast)), DTYG(dtype), DT_INT4));
@@ -370,6 +407,11 @@ conv_int8_ilm(int ast, int ilm, int dtype)
   case TY_DBLE:
     ilm = plower("oi", "KDFIX", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "KQFIX", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "REAL", ilm);
     ilm = plower("oi", "KFIX", ilm);
@@ -378,6 +420,12 @@ conv_int8_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "DREAL", ilm);
     ilm = plower("oi", "KDFIX", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "QREAL", ilm);
+    ilm = plower("oi", "KQFIX", ilm);
+    break;
+#endif
   case TY_WORD:
     if (ast && A_TYPEG(ast) == A_CNST) {
       s = cngcon(CONVAL2G(A_SPTRG(ast)), DTYG(dtype), DT_INT8);
@@ -467,6 +515,11 @@ conv_word_ilm(int ast, int ilm, int dtype)
   case TY_DBLE:
     ilm = plower("oi", "DTOUI", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "QTOUI", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "CTOUDI", ilm);
     ilm = plower("oi", "UDITOUI", ilm);
@@ -475,6 +528,12 @@ conv_word_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "CDTOUDI", ilm);
     ilm = plower("oi", "UDITOUI", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "CQTOUDI", ilm);
+    ilm = plower("oi", "UDITOUI", ilm);
+    break;
+#endif
   case TY_WORD:
     break;
   case TY_DWORD:
@@ -534,6 +593,11 @@ conv_dword_ilm(int ast, int ilm, int dtype)
   case TY_DBLE:
     ilm = plower("oi", "D2K", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "Q2K", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "CTOUDI", ilm);
     ilm = plower("oi", "UDITOD", ilm);
@@ -544,6 +608,13 @@ conv_dword_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "UDITOD", ilm);
     ilm = plower("oi", "D2K", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "CQTOUDI", ilm);
+    ilm = plower("oi", "UDITOD", ilm);
+    ilm = plower("oi", "D2K", ilm);
+    break;
+#endif
   case TY_WORD:
     ilm = plower("oi", "UI2K", ilm);
     break;
@@ -748,10 +819,16 @@ conv_log_ilm(int ast, int ilm, int dtype)
     break;
   case TY_REAL:
   case TY_DBLE:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+#endif
   case TY_LOG8:
   case TY_INT8:
   case TY_CMPLX:
   case TY_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+#endif
     ilm = conv_int_ilm(ast, ilm, dtype);
     break;
   case TY_CHAR:
@@ -825,8 +902,14 @@ conv_log8_ilm(int ast, int ilm, int dtype)
   case TY_INT8:
     break;
   case TY_DBLE:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+#endif
   case TY_CMPLX:
   case TY_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+#endif
     ilm = conv_int8_ilm(ast, ilm, dtype);
     break;
   case TY_CHAR:
@@ -879,6 +962,11 @@ conv_real_ilm(int ast, int ilm, int dtype)
   case TY_DBLE:
     ilm = plower("oi", "SNGL", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "SNGQ", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "REAL", ilm);
     break;
@@ -886,6 +974,12 @@ conv_real_ilm(int ast, int ilm, int dtype)
     ilm = plower("oi", "DREAL", ilm);
     ilm = plower("oi", "SNGL", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "QREAL", ilm);
+    ilm = plower("oi", "SNGQ", ilm);
+    break;
+#endif
   case TY_WORD:
     if (ast && A_TYPEG(ast) == A_CNST) {
       s = lower_getrealcon(
@@ -955,6 +1049,11 @@ conv_dble_ilm(int ast, int ilm, int dtype)
     break;
   case TY_DBLE:
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "DBLEQ", ilm);
+    break;
+#endif
   case TY_CMPLX:
     ilm = plower("oi", "REAL", ilm);
     ilm = plower("oi", "DBLE", ilm);
@@ -962,6 +1061,12 @@ conv_dble_ilm(int ast, int ilm, int dtype)
   case TY_DCMPLX:
     ilm = plower("oi", "DREAL", ilm);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = plower("oi", "QREAL", ilm);
+    ilm = plower("oi", "DBLEQ", ilm);
+    break;
+#endif
   case TY_WORD:
     /* convert by padding with blanks or truncating */
     if (ast && A_TYPEG(ast) == A_CNST) {
@@ -1003,6 +1108,90 @@ conv_dble(int ast)
   return conv_dble_ilm(ast, lower_ilm(ast), A_NDTYPEG(ast));
 } /* conv_dble */
 
+#ifdef TARGET_SUPPORTS_QUADFP
+/* convert whatever type ilm is to QUAD */
+static int conv_quad_ilm(int ast, int ilm, int dtype)
+{
+  int s;
+  switch (DTYG(dtype)) {
+  case TY_BINT:
+  case TY_BLOG:
+  case TY_SINT:
+  case TY_SLOG:
+    ilm = conv_int_ilm(ast, ilm, dtype);
+  case TY_LOG:
+  case TY_INT:
+    ilm = plower("oi", "QFLOAT", ilm);
+    break;
+  case TY_LOG8:
+  case TY_INT8:
+    ilm = plower("oi", "QFLOATK", ilm);
+    break;
+  case TY_REAL:
+    ilm = plower("oi", "RQUAD", ilm);
+    break;
+  case TY_DBLE:
+    ilm = plower("oi", "DQUAD", ilm);
+    break;
+  case TY_QUAD:
+    break;
+  case TY_CMPLX:
+    /* get the real part from the complex */
+    ilm = plower("oi", "REAL", ilm);
+    /* convert the float to quad precision */
+    ilm = plower("oi", "RQUAD", ilm);
+    break;
+  case TY_DCMPLX:
+    /* get the real part from the complex */
+    ilm = plower("oi", "DREAL", ilm);
+    /* convert the double to quad precision */
+    ilm = plower("oi", "DQUAD", ilm);
+    break;
+  case TY_QCMPLX:
+    /* get the real part from the complex */
+    ilm = plower("oi", "QREAL", ilm);
+    break;
+  case TY_WORD:
+    /* convert by padding with blanks or truncating */
+    if (ast && A_TYPEG(ast) == A_CNST) {
+      s = cngcon(CONVAL2G(A_SPTRG(ast)), DTYG(dtype), DT_QUAD);
+      ilm = plower("oS", "QCON", s);
+    } else {
+      ilm = plower("oi", "UITOQ", ilm);
+    }
+    break;
+  case TY_DWORD:
+    /* convert by padding with blanks or truncating */
+    if (ast && A_TYPEG(ast) == A_CNST) {
+      s = cngcon(A_SPTRG(ast), DTYG(dtype), DT_QUAD);
+      ilm = plower("oS", "QCON", s);
+    } else {
+      ilm = plower("oi", "K2Q", ilm);
+    }
+    break;
+  case TY_HOLL:
+    /* convert by padding with blanks or truncating */
+    if (ast && A_TYPEG(ast) == A_CNST) {
+      s = cngcon(A_SPTRG(ast), DTYG(dtype), DT_QUAD);
+      ilm = plower("oS", "QCON", s);
+    } else {
+      ast_error("unknown hollerith type for conversion to real*16", ast);
+    }
+    break;
+  default:
+    ast_error("unknown source type for conversion to quad precision", ast);
+    break;
+  }
+  return ilm;
+} /* conv_quad_ilm */
+
+/* convert whatever type ast is to QUAD */
+static int conv_quad(int ast)
+{
+  return conv_quad_ilm(ast, lower_ilm(ast), A_NDTYPEG(ast));
+} /* conv_dble */
+#endif
+
 /* convert whatever type ilm is to CMPLX */
 static int
 conv_cmplx_ilm(int ast, int ilm, int dtype)
@@ -1036,6 +1225,13 @@ conv_cmplx_ilm(int ast, int ilm, int dtype)
     ilmimag = plower("oS", "RCON", lowersym.realzero);
     ilm = plower("oii", "CMPLX", ilm, ilmimag);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "SNGQ", ilm);
+    ilmimag = plower("oS", "RCON", lowersym.realzero);
+    ilm = plower("oii", "CMPLX", ilm, ilmimag);
+    break;
+#endif
   case TY_CMPLX:
     break;
   case TY_DCMPLX:
@@ -1045,6 +1241,15 @@ conv_cmplx_ilm(int ast, int ilm, int dtype)
     ilmreal = plower("oi", "SNGL", ilmreal);
     ilm = plower("oii", "CMPLX", ilmreal, ilmimag);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilmimag = plower("oi", "QIMAG", ilm);
+    ilmimag = plower("oi", "SNGQ", ilmimag);
+    ilmreal = plower("oi", "QREAL", ilm);
+    ilmreal = plower("oi", "SNGQ", ilmreal);
+    ilm = plower("oii", "CMPLX", ilmreal, ilmimag);
+    break;
+#endif
   case TY_WORD:
     if (ast && A_TYPEG(ast) == A_CNST) {
       s = lower_getrealcon(
@@ -1112,6 +1317,13 @@ conv_dcmplx_ilm(int ast, int ilm, int dtype)
     ilmimag = plower("oS", "DCON", lowersym.dblezero);
     ilm = plower("oii", "DCMPLX", ilm, ilmimag);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = plower("oi", "DBLEQ", ilm);
+    ilmimag = plower("oS", "DCON", lowersym.realzero);
+    ilm = plower("oii", "DCMPLX", ilm, ilmimag);
+    break;
+#endif
   case TY_CMPLX:
     ilmimag = plower("oi", "IMAG", ilm);
     ilmimag = plower("oi", "DBLE", ilmimag);
@@ -1119,6 +1331,15 @@ conv_dcmplx_ilm(int ast, int ilm, int dtype)
     ilmreal = plower("oi", "DBLE", ilmreal);
     ilm = plower("oii", "DCMPLX", ilmreal, ilmimag);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilmimag = plower("oi", "QIMAG", ilm);
+    ilmimag = plower("oi", "DBLEQ", ilmimag);
+    ilmreal = plower("oi", "QREAL", ilm);
+    ilmreal = plower("oi", "DBLEQ", ilmreal);
+    ilm = plower("oii", "DCMPLX", ilmreal, ilmimag);
+    break;
+#endif
   case TY_DCMPLX:
     break;
   case TY_WORD:
@@ -1164,6 +1385,102 @@ conv_dcmplx(int ast)
   return conv_dcmplx_ilm(ast, lower_ilm(ast), A_NDTYPEG(ast));
 } /* conv_dcmplx */
 
+#ifdef TARGET_SUPPORTS_QUADFP
+/* convert whatever type ilm is to QCMPLX */
+static int conv_qcmplx_ilm(int ast, int ilm, int dtype)
+{
+  int ilmimag, ilmreal, s;
+  switch (DTYG(dtype)) {
+  case TY_BINT:
+  case TY_BLOG:
+  case TY_SINT:
+  case TY_SLOG:
+    ilm = conv_int_ilm(ast, ilm, dtype);
+  case TY_LOG:
+  case TY_INT:
+    ilm = plower("oi", "QFLOAT", ilm);
+    ilmimag = plower("oS", "QCON", lowersym.quadzero);
+    ilm = plower("oii", "QCMPLX", ilm, ilmimag);
+    break;
+  case TY_LOG8:
+  case TY_INT8:
+    ilm = plower("oi", "QFLOATK", ilm);
+    ilmimag = plower("oS", "QCON", lowersym.quadzero);
+    ilm = plower("oii", "QCMPLX", ilm, ilmimag);
+    break;
+  case TY_REAL:
+    ilm = plower("oi", "RQUAD", ilm);
+    ilmimag = plower("oS", "QCON", lowersym.quadzero);
+    ilm = plower("oii", "QCMPLX", ilm, ilmimag);
+    break;
+  case TY_DBLE:
+    ilm = plower("oi", "DQUAD", ilm);
+    ilmimag = plower("oS", "QCON", lowersym.quadzero);
+    ilm = plower("oii", "QCMPLX", ilm, ilmimag);
+    break;
+  case TY_QUAD:
+    ilmimag = plower("oS", "QCON", lowersym.quadzero);
+    ilm = plower("oii", "QCMPLX", ilm, ilmimag);
+    break;
+  case TY_CMPLX:
+    ilmimag = plower("oi", "IMAG", ilm);
+    ilmimag = plower("oi", "RQUAD", ilmimag);
+    ilmreal = plower("oi", "REAL", ilm);
+    ilmreal = plower("oi", "RQUAD", ilmreal);
+    ilm = plower("oii", "QCMPLX", ilmreal, ilmimag);
+    break;
+  case TY_DCMPLX:
+    ilmimag = plower("oi", "DIMAG", ilm);
+    ilmimag = plower("oi", "DQUAD", ilmimag);
+    ilmreal = plower("oi", "DREAL", ilm);
+    ilmreal = plower("oi", "DQUAD", ilmreal);
+    ilm = plower("oii", "QCMPLX", ilmreal, ilmimag);
+    break;
+  case TY_QCMPLX:
+    break;
+  case TY_WORD:
+    if (ast && A_TYPEG(ast) == A_CNST) {
+      s = cngcon(CONVAL2G(A_SPTRG(ast)), DTYG(dtype), DT_QUAD);
+      ilmreal = plower("oS", "QCON", s);
+    } else {
+      ilmreal = plower("oi", "UITOQ", ilm);
+    }
+    ilmimag = plower("oS", "QCON", lowersym.quadzero);
+    ilm = plower("oii", "QCMPLX", ilmreal, ilmimag);
+    break;
+  case TY_DWORD:
+    if (ast && A_TYPEG(ast) == A_CNST) {
+      s = cngcon(A_SPTRG(ast), DTYG(dtype), DT_QUAD);
+      ilmreal = plower("oS", "QCON", s);
+    } else {
+      ilmreal = plower("oi", "K2Q", ilm);
+    }
+    ilmimag = plower("oS", "QCON", lowersym.quadzero);
+    ilm = plower("oii", "QCMPLX", ilmreal, ilmimag);
+    break;
+  case TY_HOLL:
+    /* convert by padding with blanks or truncating */
+    if (ast && A_TYPEG(ast) == A_CNST) {
+      s = cngcon(A_SPTRG(ast), DTYG(dtype), DT_QCMPLX);
+      ilm = plower("oS", "CQCON", s);
+    } else {
+      ast_error("unknown hollerith type for conversion to complex*32", ast);
+    }
+    break;
+  default:
+    ast_error("unknown source type for conversion to complex*32", ast);
+    break;
+  }
+  return ilm;
+} /* conv_qcmplx_ilm */
+
+/* convert whatever type ast is to QCMPLX */
+static int conv_qcmplx(int ast)
+{
+  return conv_qcmplx_ilm(ast, lower_ilm(ast), A_NDTYPEG(ast));
+} /* conv_qcmplx */
+#endif
+
 int
 lower_conv_ilm(int ast, int ilm, int fromdtype, int todtype)
 {
@@ -1198,12 +1515,22 @@ lower_conv_ilm(int ast, int ilm, int fromdtype, int todtype)
   case TY_DBLE:
     ilm = conv_dble_ilm(ast, ilm, fromdtype);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ilm = conv_quad_ilm(ast, ilm, fromdtype);
+    break;
+#endif
   case TY_CMPLX:
     ilm = conv_cmplx_ilm(ast, ilm, fromdtype);
     break;
   case TY_DCMPLX:
     ilm = conv_dcmplx_ilm(ast, ilm, fromdtype);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = conv_qcmplx_ilm(ast, ilm, fromdtype);
+    break;
+#endif
   case TY_WORD:
     ilm = conv_word_ilm(ast, ilm, fromdtype);
     break;
@@ -1258,12 +1585,23 @@ lower_conv(int ast, int dtype)
   case TY_DBLE:
     ilm = conv_dble(ast);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  /* to support the type conversion */
+  case TY_QUAD:
+    ilm = conv_quad(ast);
+    break;
+#endif
   case TY_CMPLX:
     ilm = conv_cmplx(ast);
     break;
   case TY_DCMPLX:
     ilm = conv_dcmplx(ast);
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ilm = conv_qcmplx(ast);
+    break;
+#endif
   case TY_WORD:
     ilm = conv_word(ast);
     break;
@@ -1310,12 +1648,22 @@ ltyped(char *opname, int dtype)
   case TY_DBLE:
     strcpy(OP, "D");
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    strcpy(OP, "Q");
+    break;
+#endif
   case TY_CMPLX:
     strcpy(OP, "C");
     break;
   case TY_DCMPLX:
     strcpy(OP, "CD");
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    strcpy(OP, "CQ");
+    break;
+#endif
   case TY_BLOG:
   case TY_SLOG:
   case TY_LOG:
@@ -1356,12 +1704,22 @@ styped(char *opname, int dtype)
   case TY_DBLE:
     strcpy(OP, "D");
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    strcpy(OP, "Q");
+    break;
+#endif
   case TY_CMPLX:
     strcpy(OP, "C");
     break;
   case TY_DCMPLX:
     strcpy(OP, "CD");
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    strcpy(OP, "CQ");
+    break;
+#endif
   case TY_BLOG:
   case TY_SLOG:
   case TY_LOG:
@@ -1402,8 +1760,14 @@ lower_bin_arith(int ast, char *opname, int ldtype, int rdtype)
   case TY_INT8:
   case TY_REAL:
   case TY_DBLE:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+#endif
   case TY_CMPLX:
   case TY_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+#endif
   case TY_WORD:
   case TY_DWORD:
     /* OK */
@@ -1418,8 +1782,6 @@ lower_bin_arith(int ast, char *opname, int ldtype, int rdtype)
   case TY_NCHAR:
     ast_error("character result for arithmetic operation", ast);
     return 0;
-  case TY_QUAD:
-  case TY_QCMPLX:
   default:
     ast_error("unknown result for arithmetic operation", ast);
     return 0;
@@ -1464,6 +1826,10 @@ lower_un_arith(int ast, char *opname, int ldtype)
   case TY_NCHAR:
     ast_error("character result for arithmetic operation", ast);
     return 0;
+#ifndef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+  case TY_QCMPLX:
+#endif
   default:
     ast_error("unknown result for arithmetic operation", ast);
     return 0;
@@ -1530,8 +1896,14 @@ lower_bin_comparison(int ast, char *op)
   case TY_INT8:
   case TY_REAL:
   case TY_DBLE:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+#endif
   case TY_CMPLX:
   case TY_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+#endif
     break;
   case TY_BLOG:
     dtype = DT_BINT;
@@ -1551,8 +1923,10 @@ lower_bin_comparison(int ast, char *op)
   case TY_NCHAR:
     base = 1;
     break;
+#ifndef TARGET_SUPPORTS_QUADFP
   case TY_QUAD:
   case TY_QCMPLX:
+#endif
   default:
     ast_error("unknown operand type for comparison operation", ast);
     return 0;
@@ -1799,7 +2173,7 @@ lower_function(int ast)
   int bindC_structret = 0;
   bool procDummyNeedsDesc;
 
-  /*  symfunc = A_SPTRG( A_LOPG( ast ) );*/
+  /* symfunc <- A_SPTRG(A_LOPG(ast )) */
   symfunc = procsym_of_ast(A_LOPG(ast));
   if (STYPEG(symfunc) == ST_MEMBER && CLASSG(symfunc) && CCSYMG(symfunc) &&
       VTABLEG(symfunc)) {
@@ -1946,6 +2320,9 @@ lower_function(int ast)
   switch (DTYG(dtype)) {
   case TY_CMPLX:
   case TY_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+#endif
     functmpinc = 1; /* count the function temp as an extra argument */
     ++functmpcount;
     functmp = lower_scalar_temp(dtype);
@@ -2269,8 +2646,12 @@ lower_function(int ast)
 /*                       prefix:  I    K   none    D                       */
 /*                       prefix:  log                                      */
 #define in_I_K_r_D 0x0331300
+/*                       prefix:  I    K    R      D       Q               */
+#define in_I_K_r_D_Q 0x03313c0
 /*                       prefix:  I    K    R      D                       */
 #define in_i_K_A_D 0x0135300
+/*                       prefix:  I    K    R      D                       */
+#define in_i_K_A_D_Q 0x01353c0
 /*                       prefix:  none K                                   */
 #define in_i_K 0x0130000
 /*                       prefix:  log  K                                   */
@@ -2287,22 +2668,33 @@ lower_function(int ast)
 #define in_J_K 0x0530000
 /*                       prefix:  none      A      D                       */
 #define in_R_D 0x0003300
+/*                       prefix:            R      D        Q              */
+#define in_R_D_Q 0x00033c0
 /*                       prefix:            R      D                       */
 #define in_r_D 0x0001300
+/*                       prefix:            R      D        Q              */
+#define in_r_D_Q 0x00013c0
 /*                       prefix:            R      D       C     CD        */
 #define in_R_D_C_CD 0x0001333
 /*                       prefix:           none    D       C     CD        */
 #define in_r_D_C_CD 0x0001333
+/*                       prefix:            R      D       C     CD   CQ   */
+#define in_R_D_Q_C_CD_CQ 0xc0033f3
+/*                       prefix:           none    D       C     CD   CQ   */
+#define in_r_D_Q_C_CD_CQ 0xc0013f3
 /*                       prefix:                        none      D        */
 #define in_c_cD 0x0000015
 /*                       prefix: none       A      D                       */
 #define in_A_D 0x0005300
+/*                       prefix: none       A      D              Q        */
+#define in_A_D_Q 0x00053c0
 /*                       prefix:                   D                       */
 #define in_d 0x0000100
 /*                       prefix:                                           */
 #define in_c 0x1000000
 #define in_nc 0x2000000
 #define in_c_nc 0x3000000
+#define in_c_cD_cQ 0x400001d
 
 #define IARGS 100
 static int intr_argbf[IARGS];
@@ -2338,6 +2730,8 @@ intrin_name(char *name, int ast, int options)
 #define prefixA 0x0004000
 #define allowD 0x0000100
 #define prefixD 0x0000200
+#define allowQ 0x0000040
+#define prefixQ 0x0000080
 #define allowC 0x0000010
 #define prefixC 0x0000020
 #define allowCD 0x0000001
@@ -2345,6 +2739,9 @@ intrin_name(char *name, int ast, int options)
 #define prefixcD 0x0000004
 #define allowchar 0x1000000
 #define allownchar 0x2000000
+#define allowCQ 0x4000000
+#define prefixCQ 0x8000000
+#define prefixcQ 0x0000008
 
   int dtype, ok, ilm;
   char *prefix;
@@ -2399,6 +2796,14 @@ intrin_name(char *name, int ast, int options)
       prefix = "D";
     }
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    ok = options & allowQ;
+    if (options & prefixQ) {
+      prefix = "Q";
+    }
+    break;
+#endif
   case TY_CMPLX:
     ok = options & allowC;
     if (options & prefixC) {
@@ -2413,6 +2818,16 @@ intrin_name(char *name, int ast, int options)
       prefix = "D";
     }
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    ok = options & allowCQ;
+    if (options & prefixCQ) {
+      prefix = "CQ";
+    } else if (options & prefixcQ) {
+      prefix = "Q";
+    }
+    break;
+#endif
   case TY_CHAR:
     ok = options & allowchar;
     break;
@@ -2478,13 +2893,22 @@ nearest_real_type(int dtype)
 {
   switch (DTY(dtype)) {
   case TY_DWORD:
+#ifndef TARGET_SUPPORTS_QUADFP
   case TY_QUAD:
+#endif
   case TY_INT8:
   case TY_DBLE:
   case TY_DCMPLX:
+#ifndef TARGET_SUPPORTS_QUADFP
   case TY_QCMPLX:
+#endif
   case TY_LOG8:
     return DT_DBLE;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+  case TY_QCMPLX:
+    return DT_QUAD;
+#endif
   default:
     return DT_REAL;
   }
@@ -2522,80 +2946,149 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
   case I_DSQRT:
   case I_CSQRT:
   case I_CDSQRT:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSQRT:
+#endif
 
   case I_LOG:
   case I_ALOG:
   case I_DLOG:
   case I_CLOG:
   case I_CDLOG:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QLOG:
+#endif
 
   case I_LOG10:
   case I_ALOG10:
   case I_DLOG10:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QLOG10:
+#endif
 
   case I_EXP:
   case I_DEXP:
   case I_CEXP:
   case I_CDEXP:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QEXP:
+#endif
 
   case I_SIN:
   case I_DSIN:
   case I_CSIN:
   case I_CDSIN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_CQSIN:
+  case I_QSIN:
+#endif
 
   case I_SIND:
   case I_DSIND:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSIND:
+#endif
 
   case I_COS:
   case I_DCOS:
   case I_CCOS:
   case I_CDCOS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCOS:
+#endif
 
   case I_COSD:
   case I_DCOSD:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCOSD:
+#endif
 
   case I_TAN:
   case I_DTAN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QTAN:
+#endif
 
   case I_TAND:
   case I_DTAND:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QTAND:
+#endif
 
   case I_ASIN:
   case I_DASIN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QASIN:
+#endif
 
   case I_ASIND:
   case I_DASIND:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QASIND:
+#endif
 
   case I_ACOS:
   case I_DACOS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QACOS:
+#endif
 
   case I_ACOSD:
   case I_DACOSD:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QACOSD:
+#endif
 
   case I_ATAN:
   case I_DATAN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN:
+#endif
 
   case I_ATAND:
   case I_DATAND:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAND:
+#endif
 
   case I_ATAN2:
   case I_DATAN2:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN2:
+#endif
 
   case I_ATAN2D:
   case I_DATAN2D:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN2D:
+#endif
 
   case I_SINH:
   case I_DSINH:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSINH:
+#endif
 
   case I_COSH:
   case I_DCOSH:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCOSH:
+#endif
 
   case I_TANH:
   case I_DTANH:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QTANH:
+#endif
 
   case I_ERF:
   case I_ERFC:
   case I_ERFC_SCALED:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QERF:
+  case I_QERFC:
+  case I_QERFC_SCALED:
+#endif
   case I_GAMMA:
   case I_LOG_GAMMA:
   case I_HYPOT:
@@ -2614,6 +3107,9 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
 
   case I_AINT:
   case I_DINT:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QINT:
+#endif
 
   case I_ANINT:
   case I_DNINT:
@@ -2623,6 +3119,9 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
 
   case I_CONJG:
   case I_DCONJG:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCONJG:
+#endif
 
   case I_IIDIM:
   case I_JIDIM:
@@ -2630,6 +3129,9 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
   case I_IDIM:
   case I_DIM:
   case I_DDIM:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QDIM:
+#endif
 
   case I_IMOD:
   case I_JMOD:
@@ -2637,6 +3139,9 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
   case I_MOD:
   case I_AMOD:
   case I_DMOD:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMOD:
+#endif
 
   case I_IISIGN:
   case I_JISIGN:
@@ -2644,6 +3149,9 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
   case I_ISIGN:
   case I_SIGN:
   case I_DSIGN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSIGN:
+#endif
 
   case I_IIAND:
   case I_JIAND:
@@ -2703,6 +3211,9 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
 
   case I_ABS:
   case I_DABS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QABS:
+#endif
   case I_CABS:
   case I_CDABS:
   case I_BESSEL_JN:
@@ -2725,6 +3236,11 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
   case I_DMAX1:
   case I_DMIN1:
     return DT_REAL8;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMAX:
+  case I_QMIN:
+    return DT_QUAD;
+#endif
 
   case I_MAX0: /* i*4,i*4 -> i*4 */
   case I_MIN0:
@@ -2793,10 +3309,17 @@ intrinsic_arg_dtype(int intr, int ast, int args, int nargs)
   case I_DBLE:
     return -1;
 
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QIMAG:
+#endif
   case I_DIMAG:
   case I_AIMAG:
   case I_IMAG:
     /* return imaginary part */
+#ifdef TARGET_SUPPORTS_QUADFP
+    if (A_NDTYPEG(ast) == DT_QUAD)
+      return DT_QCMPLX;
+#endif
     if (A_NDTYPEG(ast) == DT_REAL8)
       return DT_CMPLX16;
     return DT_CMPLX8;
@@ -3094,6 +3617,9 @@ lower_intrinsic(int ast)
   switch (intr) {
   case I_IDNINT:
   case I_ININT:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QNINT:
+#endif
   case I_JNINT:
   case I_KNINT:
   case I_NINT:
@@ -3102,6 +3628,9 @@ lower_intrinsic(int ast)
   case I_KIDNNT:
   case I_AINT:
   case I_DINT:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QINT:
+#endif
   case I_ANINT:
   case I_DNINT:
   case I_FLOOR:
@@ -3124,23 +3653,37 @@ lower_intrinsic(int ast)
 
   case I_ABS:
   case I_DABS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QABS:
+#endif
   case I_CABS:
   case I_CDABS:
     /* use datatype of argument */
     arg1 = ARGT_ARG(args, 0);
     lower_expression(arg1);
     intrinsic_args[0] = lower_ilm(arg1);
-    ilm = intrin_name("ABS", arg1, in_I_K_r_D_C_CD);
+#ifdef TARGET_SUPPORTS_QUADFP
+    if (intr == I_QABS)
+	    ilm = intrin_name("ABS", arg1, in_r_D_Q);
+    else
+#endif
+	    ilm = intrin_name("ABS", arg1, in_I_K_r_D_C_CD);
     break;
 
   /* acos family */
   case I_ACOS:
   case I_DACOS:
-    ilm = intrin_name("ACOS", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QACOS:
+#endif
+    ilm = intrin_name("ACOS", ast, in_r_D_Q);
     break;
   case I_ACOSD:
   case I_DACOSD:
-    ilm = intrin_name("ACOSD", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QACOSD:
+#endif
+    ilm = intrin_name("ACOSD", ast, in_r_D_Q);
     break;
 
   /* and family */
@@ -3157,49 +3700,61 @@ lower_intrinsic(int ast)
   /* asin family */
   case I_ASIN:
   case I_DASIN:
-    ilm = intrin_name("ASIN", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QASIN:
+#endif
+    ilm = intrin_name("ASIN", ast, in_r_D_Q);
     break;
   case I_ASIND:
   case I_DASIND:
-    ilm = intrin_name("ASIND", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QASIND:
+#endif
+    ilm = intrin_name("ASIND", ast, in_r_D_Q);
     break;
 
   /* atan family */
   case I_ATAN:
   case I_DATAN:
-    ilm = intrin_name("ATAN", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN:
+#endif
+    ilm = intrin_name("ATAN", ast, in_r_D_Q);
     break;
   case I_ATAND:
   case I_DATAND:
-    ilm = intrin_name("ATAND", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAND:
+#endif
+    ilm = intrin_name("ATAND", ast, in_r_D_Q);
     break;
 
   case I_ERF:
-    ilm = intrin_name("ERF", ast, in_r_D);
+    ilm = intrin_name("ERF", ast, in_r_D_Q);
     break;
   case I_ERFC:
-    ilm = intrin_name("ERFC", ast, in_r_D);
+    ilm = intrin_name("ERFC", ast, in_r_D_Q);
     break;
   case I_ERFC_SCALED:
-    ilm = intrin_name("ERFC_SCALED", ast, in_r_D);
+    ilm = intrin_name("ERFC_SCALED", ast, in_r_D_Q);
     break;
   case I_GAMMA:
-    ilm = intrin_name("GAMMA", ast, in_r_D);
+    ilm = intrin_name("GAMMA", ast, in_r_D_Q);
     break;
   case I_LOG_GAMMA:
-    ilm = intrin_name("LOG_GAMMA", ast, in_r_D);
+    ilm = intrin_name("LOG_GAMMA", ast, in_r_D_Q);
     break;
   case I_HYPOT:
-    ilm = intrin_name("HYPOT", ast, in_r_D);
+    ilm = intrin_name("HYPOT", ast, in_r_D_Q);
     break;
   case I_ACOSH:
-    ilm = intrin_name("ACOSH", ast, in_r_D);
+    ilm = intrin_name("ACOSH", ast, in_r_D_Q);
     break;
   case I_ASINH:
-    ilm = intrin_name("ASINH", ast, in_r_D);
+    ilm = intrin_name("ASINH", ast, in_r_D_Q);
     break;
   case I_ATANH:
-    ilm = intrin_name("ATANH", ast, in_r_D);
+    ilm = intrin_name("ATANH", ast, in_r_D_Q);
     break;
   case I_BESSEL_J0:
     ilm = intrin_name("BESSEL_J0", ast, in_r_D);
@@ -3231,11 +3786,17 @@ lower_intrinsic(int ast)
   /* atan2 family */
   case I_ATAN2:
   case I_DATAN2:
-    ilm = intrin_name("ATAN2", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN2:
+#endif
+    ilm = intrin_name("ATAN2", ast, in_r_D_Q);
     break;
   case I_ATAN2D:
   case I_DATAN2D:
-    ilm = intrin_name("ATAN2D", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QATAN2D:
+#endif
+    ilm = intrin_name("ATAN2D", ast, in_r_D_Q);
     break;
 
   /* char family */
@@ -3252,6 +3813,9 @@ lower_intrinsic(int ast)
   /* cmplx */
   case I_CMPLX:
   case I_DCMPLX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCMPLX:
+#endif
     arg1 = ARGT_ARG(args, 0);
     arg2 = 0;
     if (nargs >= 2)
@@ -3264,6 +3828,11 @@ lower_intrinsic(int ast)
       case TY_DCMPLX:
         ilm = lower_conv(arg1, DT_CMPLX16);
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        ilm = lower_conv(arg1, DT_QCMPLX);
+        break;
+#endif
       default:
         break;
       }
@@ -3281,6 +3850,13 @@ lower_intrinsic(int ast)
         ilm2 = lower_conv(arg2, DT_REAL8);
         ilm = plower("oii", "DCMPLX", ilm, ilm2);
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        ilm = lower_conv(arg1, DT_QUAD);
+        ilm2 = lower_conv(arg2, DT_QUAD);
+        ilm = plower("oii", "QCMPLX", ilm, ilm2);
+        break;
+#endif
       default:
         break;
       }
@@ -3291,25 +3867,37 @@ lower_intrinsic(int ast)
   /* conjg family */
   case I_CONJG:
   case I_DCONJG:
-    ilm = intrin_name("CONJG", ast, in_c_cD);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCONJG:
+#endif
+    ilm = intrin_name("CONJG", ast, in_c_cD_cQ);
     break;
 
   /* cos family */
   case I_COS:
   case I_DCOS:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCOS:
+#endif
   case I_CCOS:
   case I_CDCOS:
-    ilm = intrin_name("COS", ast, in_r_D_C_CD);
+    ilm = intrin_name("COS", ast, in_r_D_Q_C_CD_CQ);
     break;
   case I_COSD:
   case I_DCOSD:
-    ilm = intrin_name("COSD", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCOSD:
+#endif
+    ilm = intrin_name("COSD", ast, in_r_D_Q);
     break;
 
   /* cosh family */
   case I_COSH:
   case I_DCOSH:
-    ilm = intrin_name("COSH", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QCOSH:
+#endif
+    ilm = intrin_name("COSH", ast, in_r_D_Q);
     break;
 
   /* dble family */
@@ -3333,15 +3921,21 @@ lower_intrinsic(int ast)
   case I_IDIM:
   case I_DDIM:
   case I_DIM:
-    ilm = intrin_name("DIM", ast, in_I_K_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QDIM:
+#endif
+    ilm = intrin_name("DIM", ast, in_I_K_r_D_Q);
     break;
 
   /* exp family */
   case I_EXP:
   case I_DEXP:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QEXP:
+#endif
   case I_CEXP:
   case I_CDEXP:
-    ilm = intrin_name("EXP", ast, in_r_D_C_CD);
+    ilm = intrin_name("EXP", ast, in_r_D_Q_C_CD_CQ);
     break;
 
   /* ibclr family */
@@ -3420,7 +4014,10 @@ lower_intrinsic(int ast)
   /* imag family */
   case I_AIMAG:
   case I_DIMAG:
-    ilm = intrin_name("IMAG", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QIMAG:
+#endif
+    ilm = intrin_name("IMAG", ast, in_r_D_Q);
     break;
 
   /* int family */
@@ -3469,15 +4066,22 @@ lower_intrinsic(int ast)
   /* log family */
   case I_ALOG:
   case I_DLOG:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QLOG:
+#endif
   case I_CLOG:
   case I_CDLOG:
   case I_LOG:
-    ilm = intrin_name("LOG", ast, in_r_D_C_CD);
+    ilm = intrin_name("LOG", ast, in_r_D_Q_C_CD_CQ);
     break;
+
+  case I_LOG10:
   case I_ALOG10:
   case I_DLOG10:
-  case I_LOG10:
-    ilm = intrin_name("LOG10", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QLOG10:
+#endif
+    ilm = intrin_name("LOG10", ast, in_r_D_Q);
     break;
 
   /* max family */
@@ -3525,6 +4129,15 @@ lower_intrinsic(int ast)
     ilm = intrin_name("MAX", input_ast, in_I_K_R_D);
     pairwise = 1;
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMAX:
+    arg0 = ARGT_ARG(args, 0);
+    arg1 = ARGT_ARG(args, 1);
+    input_ast = A_NDTYPEG(arg0) == A_NDTYPEG(arg1) ? arg0 : ast;
+    ilm = intrin_name("MAX", input_ast, in_r_D_Q);
+    pairwise = 1;
+    break;
+#endif
 
   /* min family */
   case I_MIN:
@@ -3547,6 +4160,15 @@ lower_intrinsic(int ast)
     ilm = intrin_name("MIN", input_ast, in_I_K_R_D);
     pairwise = 1;
     break;
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMIN:
+    arg0 = ARGT_ARG(args, 0);
+    arg1 = ARGT_ARG(args, 1);
+    input_ast = A_NDTYPEG(arg0) == A_NDTYPEG(arg1) ? arg0 : ast;
+    ilm = intrin_name("MIN", input_ast, in_r_D_Q);
+    pairwise = 1;
+    break;
+#endif
 
   /* mod family */
   case I_IMOD:
@@ -3555,7 +4177,10 @@ lower_intrinsic(int ast)
   case I_AMOD:
   case I_DMOD:
   case I_MOD:
-    ilm = intrin_name("MOD", ast, in_i_K_A_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMOD:
+#endif
+    ilm = intrin_name("MOD", ast, in_i_K_A_D_Q);
     break;
 
   /* nint family */
@@ -3568,6 +4193,11 @@ lower_intrinsic(int ast)
   case I_JIDNNT:
   case I_KIDNNT:
     dty = DTYG(A_NDTYPEG(ast));
+#ifdef TARGET_SUPPORTS_QUADFP
+    if (DTYG(A_NDTYPEG(ARGT_ARG(args, 0))) == TY_QUAD) {
+      ilm = intrin_name("QNINT", ast, in_I_K);
+    } else
+#endif
     if (DTYG(A_NDTYPEG(ARGT_ARG(args, 0))) == TY_DBLE) {
       ilm = intrin_name("DNINT", ast, in_I_K);
     } else {
@@ -3601,6 +4231,9 @@ lower_intrinsic(int ast)
     ilm = intrin_name("OR", ast, in_i_K);
     break;
 
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QREAL:
+#endif
   case I_DREAL:
   case I_REAL:
     arg = ARGT_ARG(args, 0);
@@ -3615,6 +4248,12 @@ lower_intrinsic(int ast)
       ilm = plower("oi", "DREAL", ilm);
       argdtype = DT_REAL8;
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QCMPLX:
+      ilm = plower("oi", "QREAL", ilm);
+      argdtype = DT_QUAD;
+      break;
+#endif
     default:
       break;
     }
@@ -3633,43 +4272,65 @@ lower_intrinsic(int ast)
   /* sin family */
   case I_SIN:
   case I_DSIN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSIN:
+#endif
   case I_CSIN:
   case I_CDSIN:
-    ilm = intrin_name("SIN", ast, in_r_D_C_CD);
+  case I_CQSIN:
+    ilm = intrin_name("SIN", ast, in_r_D_Q_C_CD_CQ);
     break;
   case I_SIND:
   case I_DSIND:
-    ilm = intrin_name("SIND", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSIND:
+#endif
+    ilm = intrin_name("SIND", ast, in_r_D_Q);
     break;
 
   /* sinh family */
   case I_SINH:
   case I_DSINH:
-    ilm = intrin_name("SINH", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSINH:
+#endif
+    ilm = intrin_name("SINH", ast, in_r_D_Q);
     break;
 
   /* sqrt family */
   case I_SQRT:
   case I_DSQRT:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSQRT:
+#endif
   case I_CSQRT:
   case I_CDSQRT:
-    ilm = intrin_name("SQRT", ast, in_r_D_C_CD);
+    ilm = intrin_name("SQRT", ast, in_r_D_Q_C_CD_CQ);
     break;
 
   /* tan family */
   case I_TAN:
   case I_DTAN:
-    ilm = intrin_name("TAN", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QTAN:
+#endif
+    ilm = intrin_name("TAN", ast, in_r_D_Q);
     break;
   case I_TAND:
   case I_DTAND:
-    ilm = intrin_name("TAND", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QTAND:
+#endif
+    ilm = intrin_name("TAND", ast, in_r_D_Q);
     break;
 
   /* tanh family */
   case I_TANH:
   case I_DTANH:
-    ilm = intrin_name("TANH", ast, in_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QTANH:
+#endif
+    ilm = intrin_name("TANH", ast, in_r_D_Q);
     break;
 
   /* shift family */
@@ -3706,7 +4367,10 @@ lower_intrinsic(int ast)
   case I_ISIGN:
   case I_DSIGN:
   case I_SIGN:
-    ilm = intrin_name("SIGN", ast, in_I_K_r_D);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QSIGN:
+#endif
+    ilm = intrin_name("SIGN", ast, in_I_K_r_D_Q);
     break;
 
   /* xor family */
@@ -3745,22 +4409,33 @@ lower_intrinsic(int ast)
 
   case I_CEILING:
     dtype = A_NDTYPEG(ast);
-    ilm = intrin_name("CEIL", ast, in_R_D);
+    ilm = intrin_name("CEIL", ast, in_R_D_Q);
     break;
   case I_FLOOR:
     dtype = A_NDTYPEG(ast);
-    ilm = intrin_name("FLOOR", ast, in_R_D);
+    ilm = intrin_name("FLOOR", ast, in_R_D_Q);
     break;
-
   case I_AINT:
   case I_DINT:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QINT:
+#endif
     dtype = A_NDTYPEG(ast);
-    ilm = intrin_name("INT", ast, in_A_D);
+    ilm = intrin_name("INT", ast, in_A_D_Q);
     break;
 
   case I_ANINT:
   case I_DNINT:
+    dtype = A_NDTYPEG(ast);
+#ifdef TARGET_SUPPORTS_QUADFP
+    if (DTYG(A_NDTYPEG(ARGT_ARG(args, 0))) == TY_QUAD) {
+      ilm = intrin_name("QANINT", ast, in_A_D_Q);
+    } else {
+      ilm = intrin_name("NINT", ast, in_A_D);
+    }
+#else
     ilm = intrin_name("NINT", ast, in_A_D);
+#endif
     break;
 
   case I_INDEX:
@@ -3926,15 +4601,18 @@ lower_intrinsic(int ast)
     default:
       /* just treat like a function call */
 
-      if ((DTY(A_DTYPEG(ast)) == TY_CMPLX || DTY(A_DTYPEG(ast)) == TY_DCMPLX) &&
-          (XBIT(70, 0x40000000))) {
+      if ((DTY(A_DTYPEG(ast)) == TY_CMPLX || DTY(A_DTYPEG(ast)) == TY_DCMPLX
+#ifdef TARGET_SUPPORTS_QUADFP
+           || DTY(A_DTYPEG(ast)) == TY_QCMPLX
+#endif
+           ) && (XBIT(70, 0x40000000))) {
         for (i = 0; i < 2; i++) {
           arg = ARGT_ARG(args, i);
           lower_expression(arg);
           intrinsic_args[i] = lower_ilm(arg);
         }
         intrinsic_args[2] = lower_conv(ARGT_ARG(args, 2), DT_LOG4);
-        ilm = intrin_name("MERGE", ast, in_R_D_C_CD);
+        ilm = intrin_name("MERGE", ast, in_R_D_Q_C_CD_CQ);
         nargs = 3;
       } else {
         ilm = lower_function(ast);
@@ -4089,6 +4767,11 @@ lower_intrinsic(int ast)
       case TY_DBLE:
         rtlRtn = RTE_expondx;
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QUAD:
+        rtlRtn = RTE_exponqx;
+        break;
+#endif
       default:
         ast_error("unexpected argument type for exponent", ast);
         break;
@@ -4101,6 +4784,10 @@ lower_intrinsic(int ast)
   case I_FRACTION:
     if (DTY(DDTG(A_NDTYPEG(ARGT_ARG(args, 0)))) == TY_REAL) {
       ilm = f90_value_function(mkRteRtnNm(RTE_fracx), DT_REAL4, args, nargs);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if(DTY(DDTG(A_NDTYPEG(ARGT_ARG(args, 0)))) == TY_QUAD){
+      ilm = f90_value_function(mkRteRtnNm(RTE_fracqx), DT_QUAD, args, nargs);
+#endif
     } else {
       ilm = f90_value_function(mkRteRtnNm(RTE_fracdx), DT_REAL8, args, nargs);
     }
@@ -4110,14 +4797,25 @@ lower_intrinsic(int ast)
     if (DTY(DDTG(A_NDTYPEG(ast))) == TY_REAL) {
       ilm =
           f90_value_function(mkRteRtnNm(RTE_rrspacingx), DT_REAL4, args, nargs);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if (DTY(DDTG(A_NDTYPEG(ast))) == TY_QUAD) {
+      ilm = 
+          f90_value_function(mkRteRtnNm(RTE_rrspacingqx), DT_QUAD, args, nargs);
+#endif
     } else {
-      ilm = f90_value_function(mkRteRtnNm(RTE_rrspacingdx), DT_REAL8, args,
-                               nargs);
+      ilm = 
+          f90_value_function(mkRteRtnNm(RTE_rrspacingdx), DT_REAL8, args, nargs);
     }
     break;
   case I_SPACING:
     if (DTY(DDTG(A_NDTYPEG(ast))) == TY_REAL) {
-      ilm = f90_value_function(mkRteRtnNm(RTE_spacingx), DT_REAL4, args, nargs);
+      ilm =
+          f90_value_function(mkRteRtnNm(RTE_spacingx), DT_REAL4, args, nargs);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if (DTY(DDTG(A_NDTYPEG(ast))) == TY_QUAD) {
+      ilm = 
+          f90_value_function(mkRteRtnNm(RTE_spacingqx), DT_QUAD, args, nargs);
+#endif
     } else {
       ilm =
           f90_value_function(mkRteRtnNm(RTE_spacingdx), DT_REAL8, args, nargs);
@@ -4125,7 +4823,13 @@ lower_intrinsic(int ast)
     break;
   case I_NEAREST:
     if (DTY(DDTG(A_NDTYPEG(ast))) == TY_REAL) {
-      ilm = f90_value_function(mkRteRtnNm(RTE_nearestx), DT_REAL4, args, nargs);
+      ilm = 
+          f90_value_function(mkRteRtnNm(RTE_nearestx), DT_REAL4, args, nargs);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if (DTY(DDTG(A_NDTYPEG(ast))) == TY_QUAD) {
+      ilm = 
+          f90_value_function(mkRteRtnNm(RTE_nearestqx), DT_QUAD, args, nargs);
+#endif
     } else {
       ilm =
           f90_value_function(mkRteRtnNm(RTE_nearestdx), DT_REAL8, args, nargs);
@@ -4135,6 +4839,11 @@ lower_intrinsic(int ast)
     if (DTY(DDTG(A_NDTYPEG(ast))) == TY_REAL) {
       ilm =
           f90_value_function_I2(mkRteRtnNm(RTE_scalex), DT_REAL4, args, nargs);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if(DTY(DDTG(A_NDTYPEG(ast))) == TY_QUAD) {
+      ilm =
+          f90_value_function_I2(mkRteRtnNm(RTE_scaleqx), DT_QUAD, args, nargs);
+#endif
     } else {
       ilm =
           f90_value_function_I2(mkRteRtnNm(RTE_scaledx), DT_REAL8, args, nargs);
@@ -4144,9 +4853,14 @@ lower_intrinsic(int ast)
     if (DTY(DDTG(A_NDTYPEG(ast))) == TY_REAL) {
       ilm =
           f90_value_function_I2(mkRteRtnNm(RTE_setexpx), DT_REAL4, args, nargs);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if(DTY(DDTG(A_NDTYPEG(ast))) == TY_QUAD) {
+      ilm = 
+          f90_value_function_I2(mkRteRtnNm(RTE_setexpqx), DT_QUAD, args, nargs);
+#endif
     } else {
-      ilm = f90_value_function_I2(mkRteRtnNm(RTE_setexpdx), DT_REAL8, args,
-                                  nargs);
+      ilm = 
+          f90_value_function_I2(mkRteRtnNm(RTE_setexpdx), DT_REAL8, args, nargs);
     }
     break;
   case I_VERIFY:
@@ -4439,7 +5153,13 @@ lower_intrinsic(int ast)
   switch (intr) {
   /* max/min family */
   case I_MAX:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMAX:
+#endif
   case I_MIN:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case I_QMIN:
+#endif
   case I_MAX0: /* i*4,i*4 -> i*4 */
   case I_MIN0:
   case I_IMAX0: /* i*2,i*2 -> i*2 */
@@ -4599,12 +5319,22 @@ lower_ast(int ast, int *unused)
       case TY_DCMPLX:
         ilm = lower_bin_arith(ast, "TOCD", dtype, dtype);
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        ilm = lower_bin_arith(ast, "TOCQ", dtype, dtype);
+        break;
+#endif
       case TY_REAL:
         ilm = lower_bin_arith(ast, "TOR", dtype, dtype);
         break;
       case TY_DBLE:
         ilm = lower_bin_arith(ast, "TOD", dtype, dtype);
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QUAD:
+        ilm = lower_bin_arith(ast, "TOQ", dtype, dtype);
+        break;
+#endif
       default:
         ast_error("unexpected exponent type", ast);
         break;
@@ -4661,6 +5391,13 @@ lower_ast(int ast, int *unused)
       rilm = lower_conv(A_ROPG(ast), DT_REAL8);
       ilm = plower("oii", "DCMPLX", lilm, rilm);
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QCMPLX:
+      lilm = lower_conv(A_LOPG(ast), DT_QUAD);
+      rilm = lower_conv(A_ROPG(ast), DT_QUAD);
+      ilm = plower("oii", "QCMPLX", lilm, rilm);
+      break;
+#endif
     default:
       ast_error("unknown operand type for (real,imag)", ast);
       break;
@@ -4699,6 +5436,12 @@ lower_ast(int ast, int *unused)
       ilm = plower("oS", "DCON", sptr);
       base = ilm;
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      ilm = plower("oS", "QCON", sptr);
+      base = ilm;
+      break;
+#endif
     case TY_CMPLX:
       ilm = plower("oS", "CCON", sptr);
       base = ilm;
@@ -4707,6 +5450,12 @@ lower_ast(int ast, int *unused)
       ilm = plower("oS", "CDCON", sptr);
       base = ilm;
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QCMPLX:
+      ilm = plower("oS", "CQCON", sptr);
+      base = ilm;
+      break;
+#endif
     case TY_BLOG:
     case TY_SLOG:
     case TY_LOG:
@@ -4800,12 +5549,22 @@ lower_ast(int ast, int *unused)
         case TY_DBLE:
           ilm = conv_dble(lop);
           break;
+#ifdef TARGET_SUPPORTS_QUADFP
+        case TY_QUAD:
+          ilm = conv_quad(lop);
+          break;
+#endif
         case TY_CMPLX:
           ilm = conv_cmplx(lop);
           break;
         case TY_DCMPLX:
           ilm = conv_dcmplx(lop);
           break;
+#ifdef TARGET_SUPPORTS_QUADFP
+        case TY_QCMPLX:
+          ilm = conv_qcmplx(lop);
+          break;
+#endif
         case TY_CHAR:
         case TY_NCHAR:
           ilm = lower_ilm(lop);

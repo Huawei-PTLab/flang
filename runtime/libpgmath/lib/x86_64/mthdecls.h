@@ -17,7 +17,6 @@
 #define CNVRTDEG(degrees) ((degrees)*DEG_TO_RAD)
 #define CNVRTRAD(radians) ((radians)*RAD_TO_DEG)
 
-
 #if     defined(TARGET_LINUX)
 #define _GNU_SOURCE 
 #endif

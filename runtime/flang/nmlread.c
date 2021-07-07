@@ -1032,7 +1032,7 @@ again:
       if (gbl->decimal == FIO_COMMA)
         decimal = ',';
       if (!((c >= '0' && c <= '9') || c == decimal || c == 'e' || c == 'E' ||
-            c == 'd' || c == 'D' || c == '-' || c == '+'))
+            c == 'd' || c == 'D' || c == 'q' || c == 'Q' || c == '-' || c == '+'))
         break;
       token_buff[i] = c;
       c = *currc++;
@@ -1040,10 +1040,10 @@ again:
     token_buff[i] = '\0';
     currc--;
     {
-      int type; /* 0 - integer    1 - __BIGREAL_T */
+      int type; /* 0 - integer    1 - __REAL16 */
       union {
         __BIGINT_T i;
-        __BIGREAL_T d;
+        __REAL16_T d;
         __INT8_T i8v;
       } val;
       int len, errcode;
@@ -1073,7 +1073,7 @@ again:
           constval.val.i = val.i;
         }
       } else {
-        constval.dtype = __BIGREAL;
+        constval.dtype = __REAL16;
         constval.val.d = val.d;
       }
     }

@@ -7,6 +7,7 @@
 
 #include "mthdecls.h"
 
+#pragma clang diagnostic ignored "-Wunused-variable"
 CMPLXFUNC_C(__mth_i_csqrt)
 {
   CMPLXARGS_C;

@@ -1452,7 +1452,12 @@ semant2(int rednum, SST *top)
       if (strcmp(SYMNAME(sptr1), "re") == 0 ||
           strcmp(SYMNAME(sptr1), "im") == 0) {
         /* build a phoney member ast that will be rewritten later */
+#ifdef TARGET_SUPPORTS_QUADFP
+        dtype = DTY(dtype) == TY_CMPLX ? DT_REAL4 :
+                DTY(dtype) == TY_DCMPLX ? DT_REAL8 : DT_QUAD;
+#else
         dtype = DTY(dtype) == TY_CMPLX ? DT_REAL4 : DT_REAL8;
+#endif
         STYPEP(sptr1, ST_MEMBER);
         DTYPEP(sptr1, dtype); /* don't count on this, it will change */
         SST_ASTP(LHS, mk_member(SST_ASTG(RHS(1)), mk_id(sptr1), dtype));
@@ -2812,6 +2817,11 @@ rewrite_cmplxpart_rval(SST *e)
     case TY_DBLE:
       intrnm = part == 1 ? "dreal" : "dimag";
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      intrnm = part == 1 ? "qreal" : "qimag";
+      break;
+#endif
     default:
       interr("rewrite_cmplxpart_rval: unexpected type", DTY(dtype), 3);
     }
@@ -2840,36 +2850,43 @@ rewrite_cmplxpart_rval(SST *e)
 static void
 form_cmplx_const(SST *res, SST *rp, SST *ip)
 {
-  int dtype;
-  int i;
+  int dtype, cdtype;
+  int r, i;
   int ast;
   INT val[2];
 
   if (SST_IDG(rp) != S_CONST || SST_IDG(ip) != S_CONST) {
-    dtype = DT_CMPLX;
+    dtype = cdtype = DT_CMPLX;
     val[0] = 0;
     val[1] = 0;
     errsev(87);
   } else {
-    i = SST_DTYPEG(rp);
-    if (i == DT_DBLE || i == DT_DCMPLX)
+    r = SST_DTYPEG(rp);
+    i = SST_DTYPEG(ip);
+#ifdef TARGET_SUPPORTS_QUADFP
+    if (r == DT_QUAD || r == DT_QCMPLX ||
+        i == DT_QUAD || i == DT_QCMPLX) {
+      dtype = DT_QUAD;
+      cdtype = DT_QCMPLX;
+    } else
+#endif
+    if (r == DT_DBLE || r == DT_DCMPLX ||
+        i == DT_DBLE || i == DT_DCMPLX) {
       dtype = DT_DBLE;
-    else {
-      i = SST_DTYPEG(ip);
-      if (i == DT_DBLE || i == DT_DCMPLX)
-        dtype = DT_DBLE;
-      else
-        dtype = DT_REAL;
+      cdtype = DT_DCMPLX;
+    } else {
+      dtype = DT_REAL;
+      cdtype = DT_CMPLX;
     }
+
     cngtyp(rp, dtype);
     val[0] = SST_CVALG(rp);
     cngtyp(ip, dtype);
     val[1] = SST_CVALG(ip);
-    dtype = (dtype == DT_DBLE) ? DT_DCMPLX : DT_CMPLX;
   }
   SST_IDP(res, S_CONST);
-  SST_DTYPEP(res, dtype);
-  SST_CVALP(res, getcon(val, dtype));
+  SST_DTYPEP(res, cdtype);
+  SST_CVALP(res, getcon(val, cdtype));
   ast = mk_cnst(SST_CVALG(res));
   SST_ASTP(res, ast);
   SST_SHAPEP(res, 0);

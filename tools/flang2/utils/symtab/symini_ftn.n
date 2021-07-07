@@ -73,48 +73,66 @@ sptr	name	pcnt	atyp	dtype	ILM	pname
 .IN DSQRT 1 D D DSQRT ftn_dsqrt
 .IN CSQRT 1 C C CSQRT ftn_csqrt
 .IN CDSQRT 1 CD CD CDSQRT ftn_cdsqrt
+.IN QSQRT 1 Q Q QSQRT ftn_qsqrt
 .IN ALOG 1 R R ALOG ftn_alog 
 .IN DLOG 1 D D DLOG ftn_dlog 
 .IN CLOG 1 C C CLOG ftn_clog 
 .IN CDLOG 1 CD CD CDLOG ftn_cdlog 
+.IN QLOG 1 Q Q QLOG ftn_qlog
 .IN ALOG10 1 R R ALOG10 ftn_alog10 
 .IN DLOG10 1 D D DLOG10 ftn_dlog10 
 .IN .EXP 1 R R EXP ftn_exp 
 .IN DEXP 1 D D DEXP ftn_dexp 
 .IN CEXP 1 C C CEXP ftn_cexp 
 .IN CDEXP 1 CD CD CDEXP ftn_cdexp 
+.IN QEXP 1 Q Q QEXP ftn_qexp
 .IN .SIN 1 R R SIN ftn_sin 
 .IN DSIN 1 D D DSIN ftn_dsin 
 .IN CSIN 1 C C CSIN ftn_csin 
 .IN CDSIN 1 CD CD CDSIN ftn_cdsin 
+.IN CQSIN 1 CQ CQ CQSIN ftn_cqsin
+.IN QSIN 1 Q Q QSIN ftn_qsin
 .IN .SIND 1 R R SIND ftn_sind
 .IN DSIND 1 D D DSIND ftn_dsind
+.IN QSIND 1 Q Q QSIND ftn_qsind
 .IN .COS 1 R R COS ftn_cos
 .IN DCOS 1 D D DCOS ftn_dcos
 .IN CCOS 1 C C CCOS ftn_ccos
+.IN QCOS 1 Q Q QCOS ftn_qcos
 .IN CDCOS 1 CD CD CDCOS ftn_cdcos
 .IN .COSD 1 R R COSD ftn_cosd
 .IN DCOSD 1 D D DCOSD ftn_dcosd
+.IN QCOSD 1 Q Q QCOSD ftn_qcosd
 .IN .TAN 1 R R TAN ftn_tan 
 .IN DTAN 1 D D DTAN ftn_dtan
+.IN QTAN 1 Q Q QTAN ftn_qtan
 .IN .TAND 1 R R TAND ftn_tand
 .IN DTAND 1 D D DTAND ftn_dtand
+.IN QTAND 1 Q Q QTAND ftn_qtand
 .IN .ASIN 1 R R ASIN ftn_asin
 .IN DASIN 1 D D DASIN ftn_dasin
+.IN QASIN 1 Q Q QASIN ftn_qasin
 .IN .ASIND 1 R R ASIND ftn_asind
 .IN DASIND 1 D D DASIND ftn_dasind
+.IN QASIND 1 Q Q QASIND ftn_qasind
 .IN .ACOS 1 R R ACOS ftn_acos
 .IN DACOS 1 D D DACOS ftn_dacos
+.IN QACOS 1 Q Q QACOS ftn_qacos
 .IN .ACOSD 1 R R ACOSD ftn_acosd
 .IN DACOSD 1 D D DACOSD ftn_dacosd
+.IN QACOSD 1 Q Q QACOSD ftn_qacosd
 .IN .ATAN 1 R R ATAN ftn_atan
 .IN DATAN 1 D D DATAN ftn_datan
+.IN QATAN 1 Q Q QATAN ftn_qatan
 .IN .ATAND 1 R R ATAND ftn_atand
 .IN DATAND 1 D D DATAND ftn_datand
+.IN QATAND 1 Q Q QATAND ftn_qatand
 .IN .ATAN2 2 R R ATAN2 ftn_atan2
 .IN DATAN2 2 D D DATAN2 ftn_datan2
+.IN QATAN2 2 Q Q QATAN2 ftn_qatan2
 .IN .ATAN2D 2 R R ATAN2D ftn_atan2d
 .IN DATAN2D 2 D D DATAN2D ftn_datan2d
+.IN QATAN2D 2 Q Q QATAN2D ftn_qatan2d
 .IN .SINH 1 R R SINH ftn_sinh
 .IN DSINH 1 D D DSINH ftn_dsinh
 .IN .COSH 1 R R COSH ftn_cosh
@@ -127,6 +145,7 @@ sptr	name	pcnt	atyp	dtype	ILM	pname
 .IN =KIABS 1 I8 I8 KABS ftn_kabs
 .IN .ABS 1 R R ABS ftn_abs
 .IN DABS 1 D D DABS ftn_dabs
+.IN QABS 1 Q Q QABS ftn_qabs
 .IN CABS 1 C R CABS ftn_cabs
 .IN CDABS 1 CD D CDABS ftn_cdabs
 .IN .INT 1 R I tc
@@ -154,16 +173,22 @@ Converts any numeric data type to short integer.
 Converts any numeric data type to integer*8.
 .IN .AINT 1 R R AINT ftn_aint
 .IN DINT 1 D D DINT ftn_dint
+.IN QINT 1 Q Q QINT ftn_qint
 .IN .ANINT 1 R R ANINT ftn_anint
+.IN QQANINT 1 Q Q QQANINT ftn_qanint
+.IN DQANINT 1 D Q DQANINT ftn_dqanint
+.IN AQANINT 1 R Q AQANINT ftn_aqanint
 .IN DNINT 1 D D DNINT ftn_dnint
 .IN .ININT 1 R SI NINT ftn_inint
 .IN .NINT 1 R I NINT ftn_nint
 .IN IDNINT 1 D I IDNINT ftn_idnint
+.IN IQNINT 1 Q I IQNINT ftn_iqnint
 .IN IIDNNT 1 D SI IDNINT ftn_iidnnt
 .IN .JNINT 1 R I NINT ftn_inint
 .IN JIDNNT 1 D I IDNINT ftn_idnint
 .IN =.KNINT 1 R I8 KNINT ftn_knint
 .IN =KIDNNT 1 D I8 KDNINT ftn_kidnnt
+.IN =KIQNNT 1 Q I8 KQNINT ftn_kiqnnt
 .IN FLOATI 1 SI R tc
 Converts integer*2 to real.
 .IN FLOATJ 1 I R tc
@@ -195,6 +220,7 @@ Convert any numeric data type to double complex.
 .IN DIMAG 1 CD D DIMAG ftn_dimag
 .IN .CONJG 1 C C CONJG ftn_conjg
 .IN DCONJG 1 CD CD DCONJG ftn_dconjg
+.IN QCONJG 1 CQ CQ QCONJG ftn_qconjg
 .IN DPROD 2 R D DPROD ftn_dprod
 .IN IMAX0 12 SI SI IMAX -
 .IN MAX0 12 I I IMAX -
@@ -230,6 +256,7 @@ Convert any numeric data type to double complex.
 .IN IDIM 2 I I IDIM ftn_idim 
 .IN .DIM 2 R R DIM ftn_dim 
 .IN DDIM 2 D D DDIM ftn_ddim 
+.IN QDIM 2 Q Q QDIM ftn_qdim
 .IN IMOD 2 SI SI MOD ftn_imod 
 .IN JMOD 2 I I MOD ftn_mod 
 .IN =KMOD 2 I8 I8 KMOD ftn_kmod 
@@ -242,6 +269,7 @@ Convert any numeric data type to double complex.
 .IN ISIGN 2 I I ISIGN ftn_isign
 .IN .SIGN 2 R R SIGN ftn_sign 
 .IN DSIGN 2 D D DSIGN ftn_dsign 
+.IN QSIGN 2 Q Q QSIGN ftn_qsign
 .IN IIAND 2 SI SI AND - 
 .IN JIAND 2 I I AND - 
 .IN =.KIAND 2 I8 I8 KAND - 
@@ -334,37 +362,37 @@ sptr	name	siname	iname	rname	dname	cname	cdname	i8name
 .GN CMPLX .2C .2C .2C .2C .2C .2C .2C 
 .GN DCMPLX .2CD .2CD .2CD .2CD .2CD .2CD .2CD 
 .GN AIMAG - - - - .AIMAG DIMAG - 
-.GN CONJG - - - - .CONJG DCONJG -
-.GN AINT - - .AINT DINT - - -
-.GN ANINT - - .ANINT DNINT - - -
+.GN CONJG - - - - .CONJG DCONJG QCONJG -
+.GN AINT - - .AINT DINT - - - QINT
+.GN ANINT - - .ANINT DNINT - - - QANINT
 .GN ININT - - .ININT IIDNNT - - -
 .GN JNINT - - .JNINT JIDNNT - - -
-.GN NINT - - .NINT IDNINT - - -
-.GN =KNINT - - .KNINT KIDNNT - - -
-.GN ABS IIABS IABS .ABS DABS CABS CDABS KIABS 
+.GN NINT - - .NINT IDNINT - - - IQNINT
+.GN =KNINT - - .KNINT KIDNNT - - - KIQNNT
+.GN ABS IIABS IABS .ABS DABS CABS CDABS KIABS - QABS 
 .GN MOD IMOD .MOD AMOD DMOD - - KMOD 
-.GN SIGN IISIGN ISIGN .SIGN DSIGN - - KISIGN 
-.GN DIM IIDIM IDIM .DIM DDIM - - KIDIM 
+.GN SIGN IISIGN ISIGN .SIGN DSIGN - - KISIGN QSIGN 
+.GN DIM IIDIM IDIM .DIM DDIM - - KIDIM QDIM
 .GN MAX IMAX0 MAX0 AMAX1 DMAX1 - - .KMAX0 
 .GN MIN IMIN0 MIN0 AMIN1 DMIN1 - - .KMIN0 
-.GN SQRT - - .SQRT DSQRT CSQRT CDSQRT -
-.GN EXP - - .EXP DEXP CEXP CDEXP -
-.GN LOG - - ALOG DLOG CLOG CDLOG -
+.GN SQRT - - .SQRT DSQRT CSQRT CDSQRT QSQRT -
+.GN EXP - - .EXP DEXP CEXP CDEXP - - - QEXP -
+.GN LOG - - ALOG DLOG CLOG CDLOG - - - QLOG -
 .GN LOG10 - - ALOG10 DLOG10 - - -
-.GN SIN - - .SIN DSIN CSIN CDSIN -
-.GN SIND - - .SIND DSIND - - -
-.GN COS - - .COS DCOS CCOS CDCOS -
-.GN COSD - - .COSD DCOSD - - -
+.GN SIN - - .SIN DSIN CSIN CDSIN - - - QSIN -
+.GN SIND - - .SIND DSIND - - - - QSIND -
+.GN COS - - .COS DCOS CCOS CDCOS - - - QCOS -
+.GN COSD - - .COSD DCOSD - - - - QCOSD -
 .GN TAN - - .TAN DTAN - - -
-.GN TAND - - .TAND DTAND - - -
+.GN TAND - - .TAND DTAND - - - QTAND -
 .GN ASIN - - .ASIN DASIN - - -
-.GN ASIND - - .ASIND DASIND - - -
-.GN ACOS - - .ACOS DACOS - - -
-.GN ACOSD - - .ACOSD DACOSD - - -
-.GN ATAN - - .ATAN DATAN - - -
-.GN ATAND - - .ATAND DATAND - - -
-.GN ATAN2 - - .ATAN2 DATAN2 - - -
-.GN ATAN2D - - .ATAN2D DATAN2D - - -
+.GN ASIND - - .ASIND DASIND - - - QASIND-
+.GN ACOS - - .ACOS DACOS - - - QACOS -
+.GN ACOSD - - .ACOSD DACOSD - - - QACOSD -
+.GN ATAN - - .ATAN DATAN - - - QATAN - 
+.GN ATAND - - .ATAND DATAND - - - QATAND -
+.GN ATAN2 - - .ATAN2 DATAN2 - - - QATAN2 -
+.GN ATAN2D - - .ATAN2D DATAN2D - - - QATAN2D -
 .GN SINH - - .SINH DSINH - - -
 .GN COSH - - .COSH DCOSH - - -
 .GN TANH - - .TANH DTANH - - -

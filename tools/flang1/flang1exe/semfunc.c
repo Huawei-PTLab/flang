@@ -28,6 +28,10 @@
 #include "version.h"
 #include "atomic_common.h"
 
+#define MAX_ARGS_NUMBER 3
+#define ARGS_NUMBER 3
+#define MIN_ARGS_NUMBER 0
+
 static struct {
   int nent;  /* number of arguments specified by user */
   int nargt; /* number actually needed for AST creation */
@@ -4478,7 +4482,12 @@ ref_intrin(SST *stktop, ITEM *list)
        * real/dble
        */
 
+#ifdef TARGET_SUPPORTS_QUADFP
+      dtype = (dtype == DT_CMPLX) ? stb.user.dt_real :
+              (dtype == DT_DCMPLX) ? DT_DBLE : DT_QUAD;
+#else
       dtype = dtype == DT_CMPLX ? stb.user.dt_real : DT_DBLE;
+#endif
 
     else /* treat like typical type conversion intrinsic */
       paramct = 1;
@@ -4507,10 +4516,16 @@ ref_intrin(SST *stktop, ITEM *list)
     case IM_I8MAX:
     case IM_RMAX:
     case IM_DMAX:
+#ifdef IM_QMAX
+    case IM_QMAX:
+#endif
     case IM_IMIN:
     case IM_I8MIN:
     case IM_RMIN:
     case IM_DMIN:
+#ifdef IM_QMIN
+    case IM_QMIN:
+#endif
       gen_init_intrin_call(stktop, sptr, count, DDTG(dtype1), TRUE);
       return 1;
     case 0:
@@ -4632,6 +4647,12 @@ ref_intrin(SST *stktop, ITEM *list)
         GET_DBLE(num1, con1);
         xdabsv(num1, res);
         goto const_getcon;
+#ifdef IM_QABS
+      case IM_QABS:
+        GET_QUAD(num1, con1);
+        xqabsv(num1, res);
+        goto const_getcon;
+#endif
       case IM_NINT:
         num1[0] = CONVAL2G(stb.flt0);
         if (xfcmp(con1, num1[0]) >= 0) {
@@ -4671,6 +4692,9 @@ ref_intrin(SST *stktop, ITEM *list)
         goto const_return;
       case IM_IMAG:
       case IM_DIMAG:
+#ifdef IM_QIMAG
+      case IM_QIMAG:
+#endif
         conval = CONVAL2G(con1);
         goto const_return;
       case IM_CONJG:
@@ -4683,6 +4707,13 @@ ref_intrin(SST *stktop, ITEM *list)
         con2 = CONVAL2G(con1);
         res[1] = const_fold(OP_SUB, (INT)stb.dbl0, con2, DT_REAL8);
         goto const_getcon;
+#ifdef IM_QCONJG
+      case IM_QCONJG:
+        res[0] = CONVAL1G(con1);
+        con2 = CONVAL2G(con1);
+        res[1] = const_fold(OP_SUB, (INT)stb.quad0, con2, DT_QUAD);
+        goto const_getcon;
+#endif
 #ifdef IM_DPROD
       case IM_DPROD:
         con2 = GET_CVAL_ARG(1);
@@ -4769,6 +4800,15 @@ ref_intrin(SST *stktop, ITEM *list)
         else
           conval = stb.dbl0;
         goto const_return;
+#ifdef IM_QDIM
+      case IM_QDIM:
+        con2 = GET_CVAL_ARG(1);
+        if (const_fold(OP_CMP, con1, con2, DT_QUAD) > 0)
+          conval = const_fold(OP_SUB, con1, con2, DT_QUAD);
+        else
+          conval = stb.quad0;
+        goto const_return;
+#endif
       case IM_IISHFT:
         con2 = GET_CVAL_ARG(1);
         /*
@@ -5028,6 +5068,16 @@ ref_intrin(SST *stktop, ITEM *list)
             conval = con1;
         }
         break;
+#ifdef IM_QMAX
+      case IM_QMAX:
+        conval = con1;
+        for (i = 1; i < count; i++) {
+          con1 = GET_CVAL_ARG(i);
+          if (const_fold(OP_CMP, con1, conval, DT_QUAD) > 0)
+            conval = con1;
+        }
+      break;
+#endif
       case IM_IMIN:
         conval = con1;
         for (i = 1; i < count; i++) {
@@ -5060,6 +5110,16 @@ ref_intrin(SST *stktop, ITEM *list)
             conval = con1;
         }
         break;
+#ifdef IM_QMIN
+      case IM_QMIN:
+        conval = con1;
+        for (i = 1; i < count; i++) {
+          con1 = GET_CVAL_ARG(i);
+          if (const_fold(OP_CMP, con1, conval, DT_QUAD) < 0)
+            conval = con1;
+        }
+        break;
+#endif
       default:
         goto no_const_fold;
       }
@@ -5270,6 +5330,11 @@ no_const_fold:
     case DT_REAL8:
       rtlRtn = RTE_dmodulov;
       break;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case DT_QUAD:
+      rtlRtn = RTE_qmodulov;
+      break;
+#endif
     }
     fsptr = sym_mkfunc_nodesc(mkRteRtnNm(rtlRtn), (int)INTTYPG(sptr));
     EXTSYMP(sptr, fsptr);
@@ -6021,11 +6086,11 @@ ref_pd(SST *stktop, ITEM *list)
 
   case PD_minloc:
   case PD_maxloc:
-    if (count == 0 || count > 4) {
-      E74_CNT(pdsym, count, 1, 4);
+    if (count == 0 || count > 5) {
+      E74_CNT(pdsym, count, 1, 5);
       goto call_e74_cnt;
     }
-    if (evl_kwd_args(list, 4, KWDARGSTR(pdsym)))
+    if (evl_kwd_args(list, 5, KWDARGSTR(pdsym)))
       goto exit_;
 
     if ((stkp = ARG_STK(3))) { /* KIND */
@@ -7299,7 +7364,7 @@ ref_pd(SST *stktop, ITEM *list)
         rtlRtn = RTE_shape4;
         break;
       case DT_INT8:
-        rtlRtn = RTE_shape;
+        rtlRtn = RTE_shape8;
         break;
       default:
         error(155, 3, gbl.lineno, SYMNAME(gbl.currsub),
@@ -7997,15 +8062,15 @@ ref_pd(SST *stktop, ITEM *list)
 #ifdef PD_ieee_selected_real_kind
   case PD_ieee_selected_real_kind:
 #endif
-    if (count > 2 || count == 0) {
-      E74_CNT(pdsym, count, 0, 2);
+    if (count > MAX_ARGS_NUMBER || count == MIN_ARGS_NUMBER) {
+      E74_CNT(pdsym, count, 1, 3);
       goto call_e74_cnt;
     }
-    if (evl_kwd_args(list, 2, KWDARGSTR(pdsym)))
+    if (evl_kwd_args(list, MAX_ARGS_NUMBER, KWDARGSTR(pdsym))) 
       goto exit_;
 
     if (sem.dinit_data) {
-      gen_init_intrin_call(stktop, pdsym, 2, stb.user.dt_int, FALSE);
+      gen_init_intrin_call(stktop, pdsym, ARGS_NUMBER, stb.user.dt_int, FALSE);
       return 0;
     }
 
@@ -8032,7 +8097,7 @@ ref_pd(SST *stktop, ITEM *list)
           conval = 4;
         else if (con1 <= 15)
           conval = 8;
-        else if (con1 <= 31 && !XBIT(57, 4))
+        else if (con1 <= MAX_EXP_OF_QMANTISSA && !XBIT(57, 4))
           conval = 16;
         else
           conval = -1;
@@ -8087,6 +8152,30 @@ ref_pd(SST *stktop, ITEM *list)
         }
       }
     }
+
+    /* add radix argument (f2008) */
+    stkp = ARG_STK(2);
+    if (stkp == NULL) {
+      ARG_AST(2) = astb.ptr0;
+    } else {
+      dtype1 = SST_DTYPEG(stkp);
+      if (!DT_ISINT(dtype1)) {
+        E74_ARG(pdsym, 2, NULL);
+        goto call_e74_arg;
+      }
+      XFR_ARGAST(2);
+      ast = SST_ASTG(stkp);
+      if (!A_ALIASG(ast)) {
+        is_constant = FALSE;
+      } else {
+        ast = A_ALIASG(ast);
+        con1 = A_SPTRG(ast);
+        con1 = CONVAL2G(con1);
+        if (con1 != 2)
+		conval = -5;
+      }
+    }
+
     if (is_constant) {
       goto const_default_int_val; /*return default integer*/
     }
@@ -8095,7 +8184,8 @@ ref_pd(SST *stktop, ITEM *list)
 
     hpf_sym = sym_mkfunc(mkRteRtnNm(RTE_sel_real_kind), stb.user.dt_int);
     dtyper = stb.user.dt_int;
-    argt_count = 2;
+    /* add radix argument, so the args is 3  (f2008) */
+    argt_count = 3;
     break;
 
   case PD_selected_char_kind:
@@ -8377,6 +8467,15 @@ ref_pd(SST *stktop, ITEM *list)
       }
       sname = "epsilon(1.0_8)";
       goto const_dble_val;
+#ifdef TARGET_SUPPORTS_QUADFP
+    case TY_QUAD:
+      val[0] = 0x3f8f0000;
+      val[1] = 0;
+      val[2] = 0;
+      val[3] = EPSILON_BIT96_127;
+      sname = "epsilon(1.0_16)";
+      goto const_quad_val;
+#endif
     default:
       break;
     }
@@ -8398,8 +8497,10 @@ ref_pd(SST *stktop, ITEM *list)
     }
     if (DTY(dtype1) == TY_REAL)
       rtlRtn = RTE_expon;
-    else /* TY_DBLE */
+    else if(DTY(dtype1) == TY_DBLE) /* TY_DBLE */
       rtlRtn = RTE_expond;
+    else
+      rtlRtn = RTE_exponq;
 
     fsptr = sym_mkfunc_nodesc(mkRteRtnNm(rtlRtn), stb.user.dt_int);
     ELEMENTALP(fsptr, 1);
@@ -8441,7 +8542,7 @@ ref_pd(SST *stktop, ITEM *list)
       default:
         interr("PD_spacing, pdtype", pdtype, 3);
       }
-    } else { /* TY_DBLE */
+    } else if (DTY(dtype1) == TY_DBLE) { /* TY_DBLE */
       switch (pdtype) {
       case PD_fraction:
         rtlRtn = RTE_fracd;
@@ -8455,7 +8556,22 @@ ref_pd(SST *stktop, ITEM *list)
       default:
         interr("PD_spacingd, pdtype", pdtype, 3);
       }
+    } else {
+      switch (pdtype) {
+      case PD_fraction:
+        rtlRtn = RTE_fracq;
+        break;
+      case PD_rrspacing:
+        rtlRtn = RTE_rrspacingq;
+        break;
+      case PD_spacing:
+        rtlRtn = RTE_spacingq;
+        break;
+      default:
+        interr("PD_spacingq or PD_rrspacingq or PD_fraction, pdtype", pdtype, 3);
+      }
     }
+
     (void)sym_mkfunc_nodesc(mkRteRtnNm(rtlRtn), dtype1);
     break;
 
@@ -8632,10 +8748,18 @@ ref_pd(SST *stktop, ITEM *list)
     } else {
       dtyper = dtype1;
     }
-    if (DTY(dtype1) == TY_REAL) {
+    switch (DTY(dtype1)) {
+    case TY_REAL:
       rtlRtn = RTE_hypot;
-    } else { /* TY_DBLE */
+      break;
+    case TY_DBLE:
       rtlRtn = RTE_hypotd;
+      break;
+    case TY_QUAD:
+      rtlRtn = RTE_hypotq;
+      break;
+    default:
+      break;
     }
     /* TODO: where is the call generated */
     break;
@@ -8938,6 +9062,29 @@ ref_pd(SST *stktop, ITEM *list)
             res[0] = const_fold(OP_SUB, con1, stb.dbl0, DT_REAL8);
         }
         break;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QUAD:
+        if (const_fold(OP_CMP, con1, stb.quad0, DT_QUAD) >= 0) {
+          /* 0x406f0000:IEEE754_QUAD_BIAS  + 112 */
+          INT qv4_112[4] = {0x406f0000, 0x00000000, 0x00000000, 0x00000000};
+          INT q4_112;
+          q4_112 = getcon(qv4_112, DT_QUAD);
+          if (const_fold(OP_CMP, con1, q4_112, DT_QUAD) >= 0)
+            res[0] = const_fold(OP_ADD, con1, stb.quad0, DT_QUAD);
+          else
+            res[0] = const_fold(OP_ADD, con1, stb.quadhalf, DT_QUAD);
+        } else {
+          INT qvm4_112[QVM4_SIZE] = {MMAX_MANTI_BIT0_31, MMAX_MANTI_BIT32_63,
+                                     MMAX_MANTI_BIT64_95, MMAX_MANTI_BIT96_127};
+          INT qm4_112;
+          qm4_112 = getcon(qvm4_112, DT_QUAD);
+          if (const_fold(OP_CMP, con1, qm4_112, DT_QUAD) >= 0)
+            res[0] = const_fold(OP_SUB, con1, stb.quadhalf, DT_QUAD);
+          else
+            res[0] = const_fold(OP_SUB, con1, stb.quad0, DT_QUAD);
+        }
+        break;
+#endif
       }
       conval = cngcon(res[0], dtype1, dtyper);
       goto const_return;
@@ -8969,7 +9116,8 @@ ref_pd(SST *stktop, ITEM *list)
 
     if (stkp2) { /* kind */
       dtyper = set_kind_result(stkp2, DT_CMPLX, TY_CMPLX);
-      dtype1 = dtyper == DT_CMPLX16 ? DT_REAL8 : DT_REAL4;
+      dtype1 = (dtyper == DT_CMPLX16) ? DT_REAL8 :
+	       (dtyper == DT_CMPLX) ? DT_REAL4 : DT_QUAD;
       if (!dtyper) {
         E74_ARG(pdsym, 1, NULL);
         goto call_e74_arg;
@@ -9235,6 +9383,7 @@ ref_pd(SST *stktop, ITEM *list)
         conval = pdtype == PD_maxexponent ? 8189 : -8188;
       else
         conval = pdtype == PD_maxexponent ? 16384 : -16381;
+      break;
     default:
       E74_ARG(pdsym, 0, NULL);
       goto call_e74_arg;
@@ -9267,15 +9416,20 @@ ref_pd(SST *stktop, ITEM *list)
       dtyper = get_array_dtype(1, DT_LOG);
     else
       dtyper = DT_LOG;
-    if (DTY(dtype2) == TY_REAL)
+    if (DTY(dtype2) == TY_REAL) {
       ast = mk_binop(OP_GE, ast, mk_cnst(stb.flt0), dtyper);
-    else
+    } else if(DTY(dtype2) == TY_DBLE) {
       ast = mk_binop(OP_GE, ast, mk_cnst(stb.dbl0), dtyper);
+    } else {
+      ast = mk_binop(OP_GE, ast, mk_cnst(stb.quad0), dtyper);
+    }
     ARG_AST(1) = ast;
     if (DTY(dtype1) == TY_REAL)
       rtlRtn = RTE_nearest;
-    else /* TY_DBLE */
+    else if (DTY(dtype1) == TY_DBLE) /* TY_DBLE */
       rtlRtn = RTE_nearestd;
+    else
+      rtlRtn = RTE_nearestq;
     (void)sym_mkfunc_nodesc(mkRteRtnNm(rtlRtn), dtype1);
     dtyper = SST_DTYPEG(stkp);
     if (shaper && DTY(dtyper) != TY_ARRAY)
@@ -9303,8 +9457,8 @@ ref_pd(SST *stktop, ITEM *list)
       else
         conval = 15;
       break;
-    case TY_QCMPLX:
     case TY_QUAD:
+    case TY_QCMPLX:
       if (XBIT(49, 0x40000)) /* C90 */
         conval = 28;
       else
@@ -9331,6 +9485,7 @@ ref_pd(SST *stktop, ITEM *list)
     case TY_INT8:
     case TY_REAL:
     case TY_DBLE:
+    case TY_QUAD:
       conval = 2;
       break;
     default:
@@ -9418,11 +9573,16 @@ ref_pd(SST *stktop, ITEM *list)
         rtlRtn = RTE_scale;
       else
         rtlRtn = RTE_setexp;
-    } else { /* TY_DBLE */
+    } else if (DTY(dtype1) == TY_DBLE) { /* TY_DBLE */
       if (pdtype == PD_scale)
         rtlRtn = RTE_scaled;
-      else
+      else 
         rtlRtn = RTE_setexpd;
+    } else {
+      if (pdtype == PD_scale)
+        rtlRtn = RTE_scaleq;
+      else 
+        rtlRtn = RTE_setexpq;
     }
     (void)sym_mkfunc_nodesc(mkRteRtnNm(rtlRtn), dtype1);
     break;
@@ -9454,6 +9614,12 @@ ref_pd(SST *stktop, ITEM *list)
       if (XBIT(51, 0x10))
         goto const_dword_val;
       goto const_dble_val;
+    case TY_QUAD:
+      val[0] = 0x00010000;
+      val[1] = 0x00000000;
+      val[2] = 0x00000000;
+      val[3] = MIN_QUAD_VALUE_BIT96_127 ;
+      goto const_quad_val;
     default:
       break;
     }

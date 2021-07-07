@@ -39,4 +39,6 @@ double ENT3F(DFLMAX, dflmax)(void) { return DBL_MAX; }
 
 double ENT3F(DFFRAC, dffrac)(void) { return DBL_EPSILON; }
 
+long double ENT3F(QFFRAC, qffrac)(void) { return LDBL_EPSILON; }
+
 int ENT3F(INMAX, inmax)(void) { return 0x7fffffff; }

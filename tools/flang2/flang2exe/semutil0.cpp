@@ -118,6 +118,9 @@ getrval(int ilmptr)
   case IM_DFUNC:
   case IM_CFUNC:
   case IM_CDFUNC:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQFUNC:
+#endif
   case IM_CALL:
   case IM_IVFUNCA:
   case IM_KVFUNCA:
@@ -134,13 +137,22 @@ getrval(int ilmptr)
   case IM_DFUNCA:
   case IM_CFUNCA:
   case IM_CDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_CQFUNCA:
+#endif
   case IM_CALLA:
   case IM_PIFUNCA:
   case IM_PKFUNCA:
   case IM_PRFUNCA:
   case IM_PDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_PQFUNCA:
+#endif
   case IM_PCFUNCA:
   case IM_PCDFUNCA:
+#ifdef TARGET_SUPPORTS_QUADFP
+  case IM_PCQFUNCA:
+#endif
   case IM_PCALLA:
     return getrval(opr2);
 
@@ -370,7 +382,7 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
   char *cp, buf[20];
   int newcvlen, oldcvlen, msk, blnk;
   INT num[4], result;
-  INT num1[4];
+  INT num1[4], num2[4];
   INT swap;
   if (is_empty_typedef(newtyp) && oldtyp == DT_INT) {
     /* FS#17600 - special case for emptyy derived type */
@@ -492,9 +504,22 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
         num[1] = CONVAL2G(oldval);
         xdfix(num, &result);
         return result;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        oldval = CONVAL1G(oldval);
+#endif
       case TY_QUAD:
+#ifdef TARGET_SUPPORTS_QUADFP
+        num[0] = CONVAL1G(oldval);
+        num[1] = CONVAL2G(oldval);
+        num[2] = CONVAL3G(oldval);
+        num[3] = CONVAL4G(oldval);
+        xqfix(num, &result);
+        return result;
+#else
         uf("QUAD");
         return 0;
+#endif
       case TY_CHAR:
         if (flg.standard)
           ERR170("conversion of CHARACTER constant to numeric");
@@ -548,9 +573,22 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
         num1[1] = CONVAL2G(oldval);
         xdfix64(num1, num);
         return getcon(num, newtyp);
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        oldval = CONVAL1G(oldval);
+#endif
       case TY_QUAD:
+#ifdef TARGET_SUPPORTS_QUADFP
+        num1[0] = CONVAL1G(oldval);
+        num1[1] = CONVAL2G(oldval);
+        num1[2] = CONVAL3G(oldval);
+        num1[3] = CONVAL4G(oldval);
+        xqfix64(num1, num);
+        return getcon(num, newtyp);
+#else
         uf("QUAD");
         return 0;
+#endif
       case TY_CHAR:
         if (flg.standard)
           ERR170("conversion of CHARACTER constant to numeric");
@@ -599,9 +637,22 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
         num[1] = CONVAL2G(oldval);
         xsngl(num, &result);
         return result;
+#ifdef TARGET_SUPPORTS_QUADFP
+      case TY_QCMPLX:
+        oldval = CONVAL1G(oldval);
+#endif
       case TY_QUAD:
+#ifdef TARGET_SUPPORTS_QUADFP
+        num[0] = CONVAL1G(oldval);
+        num[1] = CONVAL2G(oldval);
+        num[2] = CONVAL3G(oldval);
+        num[3] = CONVAL4G(oldval);
+        xqtof(num, &result);
+        return result;
+#else
         uf("QUAD");
         return oldval;
+#endif
       case TY_CHAR:
         if (flg.standard)
           ERR170("conversion of CHARACTER constant to numeric");
@@ -628,6 +679,16 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
       xdflt64(num1, num);
     } else if (TY_ISINT(from))
       xdfloat(oldval, num);
+#ifdef TARGET_SUPPORTS_QUADFP
+    else if (from == TY_QCMPLX) {
+      oldval = CONVAL1G(oldval);
+      num1[0] = CONVAL1G(oldval);
+      num1[1] = CONVAL2G(oldval);
+      num1[2] = CONVAL3G(oldval);
+      num1[3] = CONVAL4G(oldval);
+      xqtod(num1, num);
+    }
+#endif
     else if (from == TY_DCMPLX)
       return CONVAL1G(oldval);
     else if (from == TY_CMPLX) {
@@ -635,8 +696,15 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
       xdble(oldval, num);
     } else if (from == TY_REAL) {
       xdble(oldval, num);
-    }
-    else if (from == TY_HOLL || from == TY_CHAR) {
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if (from == TY_QUAD) {
+      num1[0] = CONVAL1G(oldval);
+      num1[1] = CONVAL2G(oldval);
+      num1[2] = CONVAL3G(oldval);
+      num1[3] = CONVAL4G(oldval);
+      xqtod(num1, num);
+#endif
+    } else if (from == TY_HOLL || from == TY_CHAR) {
       if (flg.standard && from == TY_CHAR)
         ERR170("conversion of CHARACTER constant to numeric");
       cp = stb.n_base + CONVAL1G(oldval);
@@ -659,6 +727,69 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
       return (stb.dbl0);
     }
     return getcon(num, DT_DBLE);
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QUAD:
+    if (from == TY_WORD) {
+      num[0] = 0;
+      num[1] = 0;
+      num[2] = 0;
+      num[3] = oldval;
+    } else if (from == TY_DWORD) {
+      num[0] = 0;
+      num[1] = 0;
+      num[2] = CONVAL1G(oldval);
+      num[3] = CONVAL2G(oldval);
+    } else if (from == TY_INT8 || from == TY_LOG8) {
+      num1[0] = CONVAL1G(oldval);
+      num1[1] = CONVAL2G(oldval);
+      xqflt64(num1, num);
+    } else if (TY_ISINT(from))
+      xqfloat(oldval, num);
+    else {
+      switch (from) {
+      case TY_QCMPLX:
+        return CONVAL1G(oldval);	      
+      case TY_CMPLX:
+        oldval = CONVAL1G(oldval);
+      case TY_REAL:
+        xftoq(oldval, num);
+        break;
+      case TY_DCMPLX:
+        oldval = CONVAL1G(oldval);
+      case TY_DBLE:
+        num1[0] = CONVAL1G(oldval);
+        num1[1] = CONVAL2G(oldval);
+        xdtoq(num1, num);
+        break;
+      case TY_HOLL:
+        cp = stb.n_base + CONVAL1G(CONVAL1G(oldval));
+        goto char_to_quad;
+      case TY_CHAR:
+        if (flg.standard)
+        ERR170("conversion of CHARACTER constant to numeric");
+        cp = stb.n_base + CONVAL1G(oldval);
+      char_to_quad:
+        holtonum(cp, num, AREA_SIZE);
+        if (flg.endian == 0) {
+          /* for little endian, need to swap words in each double word
+           * quantity.  Order of bytes in a word is okay, but not the
+           * order of words.
+           */
+          swap = num[0];
+          num[0] = num[3];
+          num[3] = swap;
+          swap = num[1];
+          num[1] = num[2];
+          num[2] = swap;
+        }
+        return getcon(num, DT_QUAD);
+      default:
+	errsev((S_0091_Constant_expression_of_wrong_data_type));
+	return (stb.quad0);
+      }
+    }
+    return getcon(num, DT_QUAD);
+#endif
 
   case TY_CMPLX:
     /*  num[0] = real part
@@ -685,6 +816,14 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
       num1[0] = CONVAL1G(oldval);
       num1[1] = CONVAL2G(oldval);
       xsngl(num1, &num[0]);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if(from == TY_QUAD) {
+      num1[0] = CONVAL1G(oldval);
+      num1[1] = CONVAL2G(oldval);
+      num1[2] = CONVAL3G(oldval);
+      num1[3] = CONVAL4G(oldval);
+      xqtof(num1, num);
+#endif
     } else if (from == TY_DCMPLX) {
       num1[0] = CONVAL1G(CONVAL1G(oldval));
       num1[1] = CONVAL2G(CONVAL1G(oldval));
@@ -692,6 +831,19 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
       num1[0] = CONVAL1G(CONVAL2G(oldval));
       num1[1] = CONVAL2G(CONVAL2G(oldval));
       xsngl(num1, &num[1]);
+#ifdef TARGET_SUPPORTS_QUADFP
+    } else if (from == TY_QCMPLX) {
+      num1[0] = CONVAL1G(CONVAL1G(oldval));
+      num1[1] = CONVAL2G(CONVAL1G(oldval));
+      num1[2] = CONVAL3G(CONVAL1G(oldval));
+      num1[3] = CONVAL4G(CONVAL1G(oldval));
+      xqtof(num1, &num[0]);
+      num1[0] = CONVAL1G(CONVAL2G(oldval));
+      num1[1] = CONVAL2G(CONVAL2G(oldval));
+      num1[2] = CONVAL3G(CONVAL2G(oldval));
+      num1[3] = CONVAL4G(CONVAL2G(oldval));
+      xqtof(num1, &num[1]);
+#endif
     } else if (from == TY_HOLL || from == TY_CHAR) {
       if (flg.standard && from == TY_CHAR)
         ERR170("conversion of CHARACTER constant to numeric");
@@ -734,11 +886,34 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
     } else if (from == TY_DBLE) {
       num[0] = oldval;
       num[1] = stb.dbl0;
+    } else if (from == TY_QUAD) {
+      INT sptr;
+      num1[0] = CONVAL1G(oldval);
+      num1[1] = CONVAL2G(oldval);
+      num1[2] = CONVAL3G(oldval);
+      num1[3] = CONVAL4G(oldval);
+      xqtod(num1, num);
+      sptr = getcon(num, DT_DBLE);
+      num[0] = sptr;
+      num[1] = stb.dbl0;
     } else if (from == TY_CMPLX) {
       xdble(CONVAL1G(oldval), num1);
       num[0] = getcon(num1, DT_DBLE);
       xdble(CONVAL2G(oldval), num1);
       num[1] = getcon(num1, DT_DBLE);
+    } else if (from == TY_QCMPLX) {
+      num1[0] = CONVAL1G(CONVAL1G(oldval));
+      num1[1] = CONVAL2G(CONVAL1G(oldval));
+      num1[2] = CONVAL3G(CONVAL1G(oldval));
+      num1[3] = CONVAL4G(CONVAL1G(oldval));
+      xqtod(num1, num2);
+      num[0] = getcon(num2, DT_DBLE);
+      num1[0] = CONVAL1G(CONVAL2G(oldval));
+      num1[1] = CONVAL2G(CONVAL2G(oldval));
+      num1[2] = CONVAL3G(CONVAL2G(oldval));
+      num1[3] = CONVAL4G(CONVAL2G(oldval));
+      xqtod(num1, num2);
+      num[1] = getcon(num2, DT_DBLE);
     } else if (from == TY_HOLL || from == TY_CHAR) {
       if (flg.standard && from == TY_CHAR)
         ERR170("conversion of CHARACTER constant to numeric");
@@ -767,6 +942,69 @@ cngcon(INT oldval, DTYPE oldtyp, DTYPE newtyp)
       errsev((error_code_t)91);
     }
     return getcon(num, DT_DCMPLX);
+
+#ifdef TARGET_SUPPORTS_QUADFP
+  case TY_QCMPLX:
+    if (from == TY_WORD) {
+      num[0] = 0;
+      num[1] = 0;
+      num[2] = 0;
+      num[3] = oldval;
+      num[0] = getcon(num, DT_QUAD);
+      num[1] = stb.quad0;
+    } else if (from == TY_DWORD) {
+      num[0] = 0;
+      num[1] = 0;
+      num[2] = CONVAL1G(oldval);
+      num[3] = CONVAL2G(oldval);
+      num[0] = getcon(num, DT_QUAD);
+      num[1] = stb.quad0; /* when is stb.quad0 set? -nzm */
+    } else if (from == TY_INT8 || from == TY_LOG8) {
+      num1[0] = CONVAL1G(oldval);
+      num1[1] = CONVAL2G(oldval);
+      xqflt64(num1, num);
+      num[0] = getcon(num, DT_QUAD);
+      num[1] = stb.quad0;
+    } else if (TY_ISINT(from)) {
+      xqfloat(oldval, num);
+      num[0] = getcon(num, DT_QUAD);
+      num[1] = stb.quad0;
+    } else if (from == TY_REAL) {
+      xftoq(oldval, num);
+      num[0] = getcon(num, DT_QUAD);
+      num[1] = stb.quad0;
+    } else if (from == TY_DBLE) {
+      INT sptr;
+      num1[0] = CONVAL1G(oldval);
+      num1[1] = CONVAL2G(oldval);
+      xdtoq(num1, num);
+      sptr = getcon(num, DT_QUAD);
+      num[0] = sptr;
+      num[1] = stb.quad0;
+    } else if (from == TY_QUAD) {
+      num[0] = oldval;
+      num[1] = stb.quad0;
+    } else if (from == TY_CMPLX) {
+      xftoq(CONVAL1G(oldval), num1);
+      num[0] = getcon(num1, DT_QUAD);
+      xftoq(CONVAL2G(oldval), num1);
+      num[1] = getcon(num1, DT_QUAD);
+    } else if (from == TY_DCMPLX) {
+      num1[0] = CONVAL1G(CONVAL1G(oldval));
+      num1[1] = CONVAL2G(CONVAL1G(oldval));
+      xdtoq(num1, num2);
+      num[0] = getcon(num2, DT_QUAD);
+      num1[0] = CONVAL1G(CONVAL2G(oldval));
+      num1[1] = CONVAL2G(CONVAL2G(oldval));
+      xdtoq(num1, num2);
+      num[1] = getcon(num2, DT_QUAD);
+    } else {
+      num[0] = 0;
+      num[1] = 0;
+      errsev((error_code_t)91);
+    }
+    return getcon(num, DT_QCMPLX);
+#endif
 
   case TY_NCHAR:
     if (from == TY_WORD) {
